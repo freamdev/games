@@ -21,6 +21,21 @@
     <script>
       var canvas = document.querySelector("#unity-canvas");
 
+      (function keepAliveWithSilentAudio() {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+          const src = ctx.createBufferSource();
+          src.buffer = buffer;
+          src.loop = true;
+          src.connect(ctx.destination);
+          src.start(0);
+          console.log("Silent audio playing to prevent throttling.");
+        } catch (e) {
+          console.warn("Could not create AudioContext:", e);
+        }
+      })();
+
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
       // If type=='warning', a yellow highlight color is used.

@@ -21,6 +21,43 @@
     <script>
       var canvas = document.querySelector("#unity-canvas");
 
+     let silentCtx, silentSource;
+    function setupSilentAudio() {
+      silentCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const buffer = silentCtx.createBuffer(1, silentCtx.sampleRate, silentCtx.sampleRate);
+      silentSource = silentCtx.createBufferSource();
+      silentSource.buffer = buffer;
+      silentSource.loop = true;
+      silentSource.connect(silentCtx.destination);
+    }
+
+    // 3. On first user interaction, resume (or create & start) the context
+    function onFirstGesture() {
+      // If not yet created, set it up
+      if (!silentCtx) setupSilentAudio();
+
+      // Resume the context (or start it if brand new)
+      silentCtx.resume().then(() => {
+        // .start can only be called once; guard against multiple calls
+        if (silentSource && silentSource.start) {
+          silentSource.start(0);
+          // remove the flag so we don't start twice
+          silentSource.start = null;
+          console.log("Silent audio started to prevent throttling.");
+        }
+      }).catch(err => {
+        console.warn("Could not resume AudioContext:", err);
+      });
+
+      // Remove our listeners after first use
+      window.removeEventListener('pointerdown', onFirstGesture);
+      window.removeEventListener('keydown', onFirstGesture);
+    }
+
+    // 4. Hook into pointerdown & keydown so any click/tap/key starts it
+    window.addEventListener('pointerdown', onFirstGesture, { once: true });
+    window.addEventListener('keydown', onFirstGesture, { once: true });
+
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
       // If type=='warning', a yellow highlight color is used.

@@ -1,1 +1,56 @@
-This is where I gather known bugs of the game.
+"Equipment": [
+    {
+      "TemplateId": "7",
+      "ItemStatBonuses": [
+        {
+          "Type": 9,
+          "Bonus": 1.0135096311569214
+        },
+        {
+          "Type": 4,
+          "Bonus": 8.967734336853028
+        }
+      ],
+      "ItemAffixes": [
+        {
+          "TemplateId": "6",
+          "Tier": 3,
+          "BaseTier": 0,
+          "Bonus": 1.0135096311569214
+        },
+        {
+          "TemplateId": "2",
+          "Tier": 3,
+          "BaseTier": 0,
+          "Bonus": 8.967734336853028
+        }
+      ]
+    },
+    {
+      "TemplateId": "7",
+      "ItemStatBonuses": [
+        {
+          "Type": 9,
+          "Bonus": 1.0135096311569214
+        },
+        {
+          "Type": 4,
+          "Bonus": 8.967734336853028
+        }
+      ],
+      "ItemAffixes": [
+        {
+          "TemplateId": "6",
+          "Tier": 3,
+          "BaseTier": 0,
+          "Bonus": 1.0135096311569214
+        },
+        {
+          "TemplateId": "2",
+          "Tier": 3,
+          "BaseTier": 0,
+          "Bonus": 8.967734336853028
+        }
+      ]
+    }
+  ],

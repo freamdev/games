@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cursor Follower + DOM SVG Sprites Trail + Panel (JSON + Autosave)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { height: 100vh; margin: 0; font-family: system-ui, sans-serif; }
+
+    /* Layer for DOM particles */
+    #trail-layer {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 2147483646; /* behind main */
+      overflow: hidden;
+    }
+
+    /* Main follower above trail */
+    #cursor-cat {
+      position: relative;
+      z-index: 2147483647;
+    }
+
+    /* Control panel */
+    #panel {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      width: 360px;
+      max-width: calc(100vw - 24px);
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      z-index: 2147483647; /* above everything */
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+    #panel header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    #panel header strong { font-size: 13px; }
+    #panel header button {
+      border: 1px solid rgba(0,0,0,0.12);
+      background: white;
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+    }
+    #panel .content {
+      padding: 10px 12px 12px;
+      display: grid;
+      gap: 12px;
+      max-height: calc(100vh - 72px);
+      overflow: auto;
+    }
+    #panel.collapsed { width: auto; }
+    #panel.collapsed .content,
+    #panel.collapsed header strong { display: none; }
+
+    .section {
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+      background: rgba(255,255,255,0.65);
+    }
+    .section h3 {
+      margin: 0;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+
+    .row { display: grid; gap: 6px; }
+    .row label { font-size: 12px; opacity: 0.8; }
+    .row input[type="range"] { width: 100%; }
+    .row input[type="text"], .row textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.12);
+      font: inherit;
+      font-size: 12px;
+      background: white;
+    }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hint { font-size: 11px; opacity: 0.65; line-height: 1.35; }
+
+    .btnrow { display: flex; gap: 10px; }
+    .btn {
+      flex: 1;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: white;
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+    }
+    .btn:active { transform: translateY(1px); }
+
+    /* Particle <img> */
+    .particle {
+      position: fixed;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      will-change: transform, opacity;
+      transform-origin: 50% 50%;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="trail-layer"></div>
+  <div id="cursor-cat"></div>
+
+  <aside id="panel">
+    <header>
+      <strong>Cursor Follower Controls</strong>
+      <button id="toggle">Hide</button>
+    </header>
+
+    <div class="content">
+
+      <div class="section">
+        <h3>Main follower</h3>
+
+        <div class="row">
+          <label>Main image URL</label>
+          <input id="mainUrl" type="text" spellcheck="false" />
+          <div class="hint">Use a direct image URL (SVG/PNG/WebP). For SVG Repo, use the raw <code>.svg</code> URL.</div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Size (<span id="mainSizeVal"></span> px)</label>
+            <input id="mainSize" type="range" min="16" max="256" step="1" />
+          </div>
+          <div class="row">
+            <label>Max speed (<span id="maxSpeedVal"></span>)</label>
+            <input id="maxSpeed" type="range" min="1" max="30" step="0.5" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Follow strength (<span id="followVal"></span>)</label>
+            <input id="followStrength" type="range" min="0.01" max="0.4" step="0.01" />
+          </div>
+          <div class="row">
+            <label>Damping (<span id="dampingVal"></span>)</label>
+            <input id="damping" type="range" min="0.5" max="0.98" step="0.01" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Rotate follow (<span id="rotateVal"></span>)</label>
+            <input id="rotateFollow" type="range" min="0" max="0.5" step="0.01" />
+          </div>
+          <div class="row">
+            <label>Bank amount (<span id="bankVal"></span>°)</label>
+            <input id="bankAmount" type="range" min="0" max="60" step="1" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Angle offset (<span id="offsetVal"></span>°)</label>
+            <input id="angleOffset" type="range" min="-180" max="180" step="1" />
+          </div>
+          <div class="row">
+            <label>Flip</label>
+            <div class="hint">Auto-flips vertically based on movement direction (same as your original).</div>
+          </div>
+        </div>
+
+        <div class="btnrow">
+          <button class="btn" id="resetMain">Reset main</button>
+          <button class="btn" id="spawnTest">Spawn test</button>
+        </div>
+        <div class="hint">“Spawn test” drops a few particles at the current follower position.</div>
+      </div>
+
+      <div class="section">
+        <h3>Sprites trail</h3>
+
+        <div class="row">
+          <label>Sprite URLs (comma-separated)</label>
+          <input id="urls" type="text" spellcheck="false" />
+          <div class="hint">Used for particles as <code>&lt;img src="..."&gt;</code>. Use direct <code>.svg</code> links.</div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Min size (<span id="minSizeVal"></span> px)</label>
+            <input id="minSize" type="range" min="4" max="64" step="1" />
+          </div>
+          <div class="row">
+            <label>Max size (<span id="maxSizeVal"></span> px)</label>
+            <input id="maxSize" type="range" min="6" max="96" step="1" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Spawn idle (<span id="idleVal"></span>/s)</label>
+            <input id="spawnIdle" type="range" min="0" max="30" step="1" />
+          </div>
+          <div class="row">
+            <label>Spawn moving (<span id="moveVal"></span>/s)</label>
+            <input id="spawnMove" type="range" min="0" max="120" step="1" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Life min (<span id="lifeMinVal"></span>s)</label>
+            <input id="lifeMin" type="range" min="0.1" max="3" step="0.05" />
+          </div>
+          <div class="row">
+            <label>Life max (<span id="lifeMaxVal"></span>s)</label>
+            <input id="lifeMax" type="range" min="0.1" max="4" step="0.05" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Inherit velocity (<span id="inheritVal"></span>)</label>
+            <input id="inheritVelocity" type="range" min="0" max="1" step="0.05" />
+          </div>
+          <div class="row">
+            <label>Drift max (<span id="driftVal"></span> px/s)</label>
+            <input id="driftMax" type="range" min="0" max="240" step="5" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="row">
+            <label>Spin (<span id="spinVal"></span>°/s)</label>
+            <input id="randomSpin" type="range" min="0" max="720" step="10" />
+          </div>
+          <div class="row">
+            <label>Gravity (<span id="gravVal"></span> px/s²)</label>
+            <input id="gravity" type="range" min="-300" max="600" step="10" />
+          </div>
+        </div>
+
+        <div class="hint">Tip: set gravity negative (e.g. -80) for a float-up effect.</div>
+      </div>
+
+      <div class="section">
+        <h3>Config JSON</h3>
+
+        <div class="row">
+          <label>Import / export</label>
+          <textarea id="cfgJson" rows="8" spellcheck="false"
+            style="font: 12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+          <div class="hint">Export fills this box. Paste JSON here to import.</div>
+        </div>
+
+        <div class="btnrow">
+          <button class="btn" id="exportCfg">Export</button>
+          <button class="btn" id="importCfg">Import</button>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <script>
+  (() => {
+    const mount = document.getElementById("cursor-cat");
+    const layer = document.getElementById("trail-layer");
+    if (!mount || !layer) return;
+
+    /* ========= DEFAULTS + STORAGE ========= */
+    const STORAGE_KEY = "cursorFollowerConfig.v1";
+
+    const DEFAULT_MAIN_URL = "https://www.svgrepo.com/show/454289/death-grim-halloween-2.svg";
+    const DEFAULT_SPRITES = [
+      "https://www.svgrepo.com/show/454273/halloween-horror-pumpkin.svg",
+      "https://www.svgrepo.com/show/454305/halloween-horror-skeleton-2.svg"
+    ];
+
+    /* ========= CONFIG ========= */
+    const CFG = {
+      // main follower
+      mainUrl: DEFAULT_MAIN_URL,
+      size: 128,
+      followStrength: 0.12,
+      damping: 0.84,
+      maxSpeed: 10,
+      rotateFollow: 0.18,
+      bankAmount: 20,
+      angleOffset: 0,
+
+      // DOM sprite trail
+      spriteUrls: [...DEFAULT_SPRITES],
+      spawnRateIdle: 6,
+      spawnRateMoving: 45,
+      minSize: 10,
+      maxSize: 28,
+      lifeMin: 0.45,
+      lifeMax: 1.20,
+      shrinkTo: 0.15,
+      driftMin: 10,
+      driftMax: 90,
+      inheritVelocity: 0.35,
+      randomSpin: 220,
+      gravity: 0,
+      alpha: 0.95,
+      fadePow: 1.6
+    };
+
+    /* ========= DOM: MAIN FOLLOWER ========= */
+    const wrap = document.createElement("div");
+    wrap.style.position = "fixed";
+    wrap.style.left = "0";
+    wrap.style.top = "0";
+    wrap.style.pointerEvents = "none";
+    wrap.style.zIndex = "2147483647";
+    mount.appendChild(wrap);
+
+    const mainImg = document.createElement("img");
+    mainImg.alt = "cursor-follower";
+    mainImg.decoding = "async";
+    mainImg.loading = "eager";
+    mainImg.style.position = "absolute";
+    mainImg.style.width = CFG.size + "px";
+    mainImg.style.height = CFG.size + "px";
+    mainImg.style.transformOrigin = "50% 50%";
+    mainImg.style.willChange = "transform";
+    mainImg.style.userSelect = "none";
+    mainImg.style.webkitUserDrag = "none";
+    mainImg.src = CFG.mainUrl;
+    wrap.appendChild(mainImg);
+
+    function applyMainSize() {
+      mainImg.style.width = CFG.size + "px";
+      mainImg.style.height = CFG.size + "px";
+    }
+
+    function applyMainUrl() {
+      mainImg.src = CFG.mainUrl || DEFAULT_MAIN_URL;
+    }
+
+    /* ========= STATE ========= */
+    let targetX = innerWidth / 2, targetY = innerHeight / 2;
+    let x = targetX, y = targetY;
+    let vx = 0, vy = 0;
+    let angle = 0, lastAngle = 0, angleVel = 0;
+
+    /* ========= INPUT ========= */
+    const onMove = (e) => { targetX = e.clientX; targetY = e.clientY; };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    window.addEventListener("pointermove", onMove, { passive: true });
+
+    /* ========= UTILS ========= */
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const rand = (a, b) => a + Math.random() * (b - a);
+    const randSign = () => (Math.random() < 0.5 ? -1 : 1);
+    const lerpAngle = (a, b, t) => {
+      let d = ((b - a + 540) % 360) - 180;
+      return a + d * t;
+    };
+
+    /* ========= PARTICLES (DOM) ========= */
+    const particles = [];
+    let spawnCarry = 0;
+
+    function pickUrl() {
+      const urls = CFG.spriteUrls.filter(Boolean);
+      if (!urls.length) return null;
+      return urls[(Math.random() * urls.length) | 0];
+    }
+
+    function spawnParticle(px, py) {
+      const src = pickUrl();
+      if (!src) return;
+
+      const img = document.createElement("img");
+      img.className = "particle";
+      img.src = src;
+      img.decoding = "async";
+      img.loading = "eager";
+      layer.appendChild(img);
+
+      const size0 = rand(CFG.minSize, CFG.maxSize);
+      img.width = Math.round(size0);
+      img.height = Math.round(size0);
+
+      const life = rand(CFG.lifeMin, CFG.lifeMax);
+
+      // emit behind main follower
+      const vlen = Math.hypot(vx, vy) || 1;
+      const backX = -vx / vlen;
+      const backY = -vy / vlen;
+
+      const spread = rand(-0.9, 0.9);
+      const ox = backX * rand(6, 18) + spread * backY * rand(2, 10);
+      const oy = backY * rand(6, 18) - spread * backX * rand(2, 10);
+
+      const drift = rand(CFG.driftMin, CFG.driftMax);
+      const dir = rand(0, Math.PI * 2);
+
+      particles.push({
+        el: img,
+        x: px + ox,
+        y: py + oy,
+        vx: Math.cos(dir) * drift + vx * CFG.inheritVelocity,
+        vy: Math.sin(dir) * drift + vy * CFG.inheritVelocity,
+        rot: rand(0, 360),
+        spin: rand(0, CFG.randomSpin) * randSign(),
+        size0,
+        life,
+        age: 0
+      });
+    }
+
+    function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.age += dt;
+
+        if (p.age >= p.life) {
+          p.el.remove();
+          particles.splice(i, 1);
+          continue;
+        }
+
+        p.vy += CFG.gravity * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rot += p.spin * dt;
+
+        const t = p.age / p.life;
+        const fade = Math.pow(1 - t, CFG.fadePow);
+        const alpha = CFG.alpha * fade;
+
+        const scale = (1 - t) * (1 - CFG.shrinkTo) + CFG.shrinkTo;
+        const size = p.size0 * scale;
+
+        p.el.style.opacity = alpha.toFixed(3);
+        p.el.style.transform =
+          `translate(${(p.x - size / 2).toFixed(2)}px, ${(p.y - size / 2).toFixed(2)}px)
+           rotate(${p.rot.toFixed(2)}deg)
+           scale(${(size / p.size0).toFixed(3)})`;
+      }
+    }
+
+    /* ========= LOOP ========= */
+    let lastT = performance.now();
+
+    function tick(now) {
+      const dt = Math.min(0.033, (now - lastT) / 1000);
+      lastT = now;
+
+      const dx = targetX - x;
+      const dy = targetY - y;
+
+      vx += dx * CFG.followStrength;
+      vy += dy * CFG.followStrength;
+
+      vx *= CFG.damping;
+      vy *= CFG.damping;
+
+      const speed = Math.hypot(vx, vy);
+      if (speed > CFG.maxSpeed) {
+        const s = CFG.maxSpeed / speed;
+        vx *= s; vy *= s;
+      }
+
+      x += vx; y += vy;
+
+      if (speed > 0.3 && CFG.rotateFollow > 0) {
+        const desired = Math.atan2(vy, vx) * 180 / Math.PI;
+        angle = lerpAngle(angle, desired, CFG.rotateFollow);
+      }
+
+      const turn = (((angle - lastAngle + 540) % 360) - 180);
+      lastAngle = angle;
+      angleVel = angleVel * 0.85 + turn * 0.6;
+      const bank = clamp(-angleVel * 0.9, -CFG.bankAmount, CFG.bankAmount);
+
+      // Spawn based on speed
+      const speedNorm = clamp(speed / CFG.maxSpeed, 0, 1);
+      const rate = CFG.spawnRateIdle + (CFG.spawnRateMoving - CFG.spawnRateIdle) * speedNorm;
+
+      spawnCarry += rate * dt;
+      while (spawnCarry >= 1) {
+        spawnCarry -= 1;
+        spawnParticle(x, y);
+      }
+
+      updateParticles(dt);
+
+      const facingLeft = vx < 0;
+      const flipY = facingLeft ? -1 : 1;
+      const half = CFG.size / 2;
+
+      mainImg.style.transform =
+        `translate(${x - half}px, ${y - half}px)
+         scale(1, ${flipY})
+         rotate(${angle + bank + CFG.angleOffset}deg)`;
+
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame((t) => { lastT = t; tick(t); });
+
+    /* ========= PANEL WIRING ========= */
+    const panel = document.getElementById("panel");
+    const toggleBtn = document.getElementById("toggle");
+
+    // main
+    const mainUrlInput = document.getElementById("mainUrl");
+    const mainSize = document.getElementById("mainSize");
+    const maxSpeed = document.getElementById("maxSpeed");
+    const followStrength = document.getElementById("followStrength");
+    const damping = document.getElementById("damping");
+    const rotateFollow = document.getElementById("rotateFollow");
+    const bankAmount = document.getElementById("bankAmount");
+    const angleOffset = document.getElementById("angleOffset");
+
+    const mainSizeVal = document.getElementById("mainSizeVal");
+    const maxSpeedVal = document.getElementById("maxSpeedVal");
+    const followVal = document.getElementById("followVal");
+    const dampingVal = document.getElementById("dampingVal");
+    const rotateVal = document.getElementById("rotateVal");
+    const bankVal = document.getElementById("bankVal");
+    const offsetVal = document.getElementById("offsetVal");
+
+    // sprites
+    const urlsInput = document.getElementById("urls");
+    const minSize = document.getElementById("minSize");
+    const maxSize2 = document.getElementById("maxSize");
+    const spawnIdle = document.getElementById("spawnIdle");
+    const spawnMove = document.getElementById("spawnMove");
+    const lifeMin = document.getElementById("lifeMin");
+    const lifeMax = document.getElementById("lifeMax");
+    const inheritVelocity = document.getElementById("inheritVelocity");
+    const driftMax = document.getElementById("driftMax");
+    const randomSpin = document.getElementById("randomSpin");
+    const gravity = document.getElementById("gravity");
+
+    const minSizeVal = document.getElementById("minSizeVal");
+    const maxSizeVal = document.getElementById("maxSizeVal");
+    const idleVal = document.getElementById("idleVal");
+    const moveVal = document.getElementById("moveVal");
+    const lifeMinVal = document.getElementById("lifeMinVal");
+    const lifeMaxVal = document.getElementById("lifeMaxVal");
+    const inheritVal = document.getElementById("inheritVal");
+    const driftVal = document.getElementById("driftVal");
+    const spinVal = document.getElementById("spinVal");
+    const gravVal = document.getElementById("gravVal");
+
+    // json
+    const cfgJson = document.getElementById("cfgJson");
+    const exportCfg = document.getElementById("exportCfg");
+    const importCfg = document.getElementById("importCfg");
+    const loadSaved = document.getElementById("loadSaved");
+    const clearSaved = document.getElementById("clearSaved");
+    const cfgStatus = document.getElementById("cfgStatus");
+
+    // buttons
+    const resetMain = document.getElementById("resetMain");
+    const spawnTest = document.getElementById("spawnTest");
+
+    function showStatus(msg, ok = true) {
+      if (!cfgStatus) return;
+      cfgStatus.textContent = msg;
+      cfgStatus.style.opacity = "0.85";
+      cfgStatus.style.color = ok ? "inherit" : "crimson";
+    }
+
+    const CFG_KEYS = [
+      "mainUrl","size","followStrength","damping","maxSpeed","rotateFollow","bankAmount","angleOffset",
+      "spriteUrls","spawnRateIdle","spawnRateMoving","minSize","maxSize","lifeMin","lifeMax","shrinkTo",
+      "driftMin","driftMax","inheritVelocity","randomSpin","gravity","alpha","fadePow"
+    ];
+
+    function getExportObject() {
+      const out = {};
+      for (const k of CFG_KEYS) out[k] = CFG[k];
+      return out;
+    }
+
+    function applyCfgPatch(patch, { silent = false } = {}) {
+      if (!patch || typeof patch !== "object") return;
+
+      for (const k of CFG_KEYS) {
+        if (!(k in patch)) continue;
+
+        if (k === "spriteUrls") {
+          const v = patch[k];
+          if (Array.isArray(v)) CFG.spriteUrls = v.map(s => String(s).trim()).filter(Boolean);
+          else if (typeof v === "string") CFG.spriteUrls = v.split(",").map(s => s.trim()).filter(Boolean);
+          continue;
+        }
+
+        if (k === "mainUrl") {
+          const v = String(patch.mainUrl ?? "").trim();
+          CFG.mainUrl = v || DEFAULT_MAIN_URL;
+          continue;
+        }
+
+        const v = patch[k];
+        if (typeof v === "number") CFG[k] = v;
+        else if (typeof v === "string" && v.trim() !== "" && !Number.isNaN(+v)) CFG[k] = +v;
+        else if (typeof v === "boolean") CFG[k] = v;
+      }
+
+      // enforce constraints
+      CFG.maxSize = Math.max(CFG.maxSize, CFG.minSize + 1);
+      CFG.lifeMax = Math.max(CFG.lifeMax, CFG.lifeMin + 0.05);
+      CFG.mainUrl = (CFG.mainUrl || "").trim() || DEFAULT_MAIN_URL;
+
+      applyMainUrl();
+      applyMainSize();
+      syncUI();
+
+    }
+
+    function syncUI() {
+      // main
+      mainUrlInput.value = CFG.mainUrl;
+      mainSize.value = CFG.size;
+      maxSpeed.value = CFG.maxSpeed;
+      followStrength.value = CFG.followStrength;
+      damping.value = CFG.damping;
+      rotateFollow.value = CFG.rotateFollow;
+      bankAmount.value = CFG.bankAmount;
+      angleOffset.value = CFG.angleOffset;
+
+      mainSizeVal.textContent = CFG.size;
+      maxSpeedVal.textContent = CFG.maxSpeed.toFixed(1);
+      followVal.textContent = CFG.followStrength.toFixed(2);
+      dampingVal.textContent = CFG.damping.toFixed(2);
+      rotateVal.textContent = CFG.rotateFollow.toFixed(2);
+      bankVal.textContent = CFG.bankAmount.toFixed(0);
+      offsetVal.textContent = CFG.angleOffset.toFixed(0);
+
+      // sprites
+      urlsInput.value = CFG.spriteUrls.join(", ");
+      minSize.value = CFG.minSize;
+      maxSize2.value = CFG.maxSize;
+      spawnIdle.value = CFG.spawnRateIdle;
+      spawnMove.value = CFG.spawnRateMoving;
+      lifeMin.value = CFG.lifeMin;
+      lifeMax.value = CFG.lifeMax;
+      inheritVelocity.value = CFG.inheritVelocity;
+      driftMax.value = CFG.driftMax;
+      randomSpin.value = CFG.randomSpin;
+      gravity.value = CFG.gravity;
+
+      minSizeVal.textContent = CFG.minSize;
+      maxSizeVal.textContent = CFG.maxSize;
+      idleVal.textContent = CFG.spawnRateIdle;
+      moveVal.textContent = CFG.spawnRateMoving;
+      lifeMinVal.textContent = CFG.lifeMin.toFixed(2);
+      lifeMaxVal.textContent = CFG.lifeMax.toFixed(2);
+      inheritVal.textContent = CFG.inheritVelocity.toFixed(2);
+      driftVal.textContent = CFG.driftMax.toFixed(0);
+      spinVal.textContent = CFG.randomSpin.toFixed(0);
+      gravVal.textContent = CFG.gravity.toFixed(0);
+    }
+
+    toggleBtn.addEventListener("click", () => {
+      panel.classList.toggle("collapsed");
+      toggleBtn.textContent = panel.classList.contains("collapsed") ? "Show" : "Hide";
+    });
+
+    // main url change
+    mainUrlInput.addEventListener("change", () => {
+      const url = mainUrlInput.value.trim();
+      CFG.mainUrl = url || DEFAULT_MAIN_URL;
+      applyMainUrl();
+      syncUI();
+    });
+
+    // sprite urls change
+    urlsInput.addEventListener("change", () => {
+      const list = urlsInput.value.split(",").map(s => s.trim()).filter(Boolean);
+      CFG.spriteUrls = list.length ? list : [...DEFAULT_SPRITES];
+      syncUI();
+    });
+
+    function bindRange(el, setter) {
+      el.addEventListener("input", () => {
+        setter(+el.value);
+        syncUI();
+      });
+    }
+
+    // main binds
+    bindRange(mainSize, (v) => { CFG.size = v; applyMainSize(); });
+    bindRange(maxSpeed, (v) => { CFG.maxSpeed = v; });
+    bindRange(followStrength, (v) => { CFG.followStrength = v; });
+    bindRange(damping, (v) => { CFG.damping = v; });
+    bindRange(rotateFollow, (v) => { CFG.rotateFollow = v; });
+    bindRange(bankAmount, (v) => { CFG.bankAmount = v; });
+    bindRange(angleOffset, (v) => { CFG.angleOffset = v; });
+
+    // sprite binds
+    bindRange(minSize, (v) => { CFG.minSize = Math.min(v, CFG.maxSize - 1); });
+    bindRange(maxSize2, (v) => { CFG.maxSize = Math.max(v, CFG.minSize + 1); });
+    bindRange(spawnIdle, (v) => { CFG.spawnRateIdle = v; });
+    bindRange(spawnMove, (v) => { CFG.spawnRateMoving = v; });
+    bindRange(lifeMin, (v) => { CFG.lifeMin = Math.min(v, CFG.lifeMax - 0.05); });
+    bindRange(lifeMax, (v) => { CFG.lifeMax = Math.max(v, CFG.lifeMin + 0.05); });
+    bindRange(inheritVelocity, (v) => { CFG.inheritVelocity = v; });
+    bindRange(driftMax, (v) => { CFG.driftMax = v; });
+    bindRange(randomSpin, (v) => { CFG.randomSpin = v; });
+    bindRange(gravity, (v) => { CFG.gravity = v; });
+
+    /* ========= JSON EXPORT/IMPORT ========= */
+    exportCfg.addEventListener("click", async () => {
+      const json = JSON.stringify(getExportObject(), null, 2);
+      cfgJson.value = json;
+      try {
+        await navigator.clipboard.writeText(json);
+        showStatus("Exported + copied to clipboard ✅", true);
+      } catch {
+        showStatus("Exported (clipboard copy failed)", false);
+      }
+    });
+
+    importCfg.addEventListener("click", () => {
+      const text = (cfgJson.value || "").trim();
+      if (!text) return showStatus("Paste JSON first.", false);
+
+      try {
+        const parsed = JSON.parse(text);
+        applyCfgPatch(parsed);
+        showStatus("Imported ✅", true);
+      } catch (e) {
+        showStatus("Import failed: " + (e?.message || "invalid JSON"), false);
+      }
+    });
+
+    /* ========= AUTOSAVE (localStorage) ========= */
+    
+
+    /* ========= MAIN BUTTONS ========= */
+    resetMain.addEventListener("click", () => {
+      CFG.mainUrl = DEFAULT_MAIN_URL;
+      applyMainUrl();
+      mainUrlInput.value = DEFAULT_MAIN_URL;
+      showStatus("Main reset to default ✅", true);
+    });
+
+    spawnTest.addEventListener("click", () => {
+      for (let i = 0; i < 12; i++) spawnParticle(x, y);
+    });
+
+    /* ========= INIT: load saved or defaults ========= */
+    const loaded = loadConfigFromStorage({ silent: true });
+    if (!loaded) {
+      // ensure defaults visible + saved once
+      applyMainUrl();
+      applyMainSize();
+      syncUI();
+      showStatus("Using defaults (saved locally).", true);
+    } else {
+      showStatus("Loaded saved config ✅", true);
+    }
+
+    /* ========= tiny API ========= */
+    window.CursorCat = {
+      export: () => JSON.stringify(getExportObject(), null, 2),
+      import: (jsonOrObj) => {
+        const obj = typeof jsonOrObj === "string" ? JSON.parse(jsonOrObj) : jsonOrObj;
+        applyCfgPatch(obj);
+      },
+      save: () => saveConfig(),
+      load: () => loadConfigFromStorage(),
+      clearSaved: () => localStorage.removeItem(STORAGE_KEY)
+    };
+  })();
+  </script>
+</body>
+</html>

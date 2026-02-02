@@ -23,11 +23,167 @@
       position: relative;
       z-index: 2147483647;
     }
+
+    /* ===== Settings UI ===== */
+    #cfg-toggle {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      z-index: 2147483647;
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-size: 16px;
+      cursor: pointer;
+      background: rgba(20, 20, 20, 0.88);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+    }
+
+    #cfg-panel {
+      position: fixed;
+      right: 14px;
+      bottom: 60px;
+      width: min(360px, calc(100vw - 28px));
+      max-height: min(72vh, 680px);
+      overflow: auto;
+      z-index: 2147483647;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 14px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+      padding: 12px 12px 10px;
+      display: none;
+    }
+
+    #cfg-panel.open { display: block; }
+
+    #cfg-panel h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    #cfg-panel h3 span {
+      opacity: 0.75;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .cfg-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .cfg-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.65);
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .cfg-row label {
+      font-size: 12px;
+      font-weight: 650;
+      color: #111;
+      line-height: 1.2;
+    }
+
+    .cfg-row label small {
+      display: block;
+      opacity: 0.65;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .cfg-controls {
+      display: grid;
+      gap: 6px;
+      justify-items: end;
+    }
+
+    .cfg-controls input[type="number"]{
+      width: 110px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.15);
+      background: rgba(255,255,255,0.95);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .cfg-controls input[type="range"]{
+      width: 140px;
+    }
+
+    .cfg-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .cfg-actions button {
+      border: 1px solid rgba(0,0,0,0.15);
+      background: rgba(255,255,255,0.9);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .cfg-actions button.primary {
+      background: rgba(20,20,20,0.9);
+      color: #fff;
+      border-color: rgba(0,0,0,0.25);
+    }
+
+    .cfg-actions input[type="file"]{
+      display: none;
+    }
+
+    .cfg-note {
+      margin-top: 8px;
+      font-size: 11px;
+      opacity: 0.7;
+      line-height: 1.35;
+    }
   </style>
 </head>
 <body>
   <canvas id="trail"></canvas>
   <div id="cursor-cat"></div>
+
+  <!-- UI -->
+  <button id="cfg-toggle" type="button" aria-label="Toggle settings">⚙️</button>
+  <div id="cfg-panel" role="dialog" aria-label="Cursor Cat Settings">
+    <h3>
+      Cursor Cat Settings
+      <span id="cfg-status">live</span>
+    </h3>
+
+    <div class="cfg-grid" id="cfg-grid"></div>
+
+    <div class="cfg-actions">
+      <button class="primary" id="cfg-export" type="button">Export JSON</button>
+      <button id="cfg-import-btn" type="button">Import JSON</button>
+      <input id="cfg-import" type="file" accept="application/json" />
+      <button id="cfg-reset" type="button">Reset</button>
+    </div>
+
+    <div class="cfg-note">
+      Tip: Export a JSON, tweak values, then Import it back. Changes apply instantly.
+    </div>
+  </div>
 
   <script>
   (() => {
@@ -57,10 +213,13 @@
       driftMax: 90,           // px/sec
       inheritVelocity: 0.35,  // 0..1 how much cat velocity affects sprite
       randomSpin: 220,        // deg/sec max abs
-      gravity: 1000,             // px/sec^2 (try 40 for float-down)
+      gravity: 1000,          // px/sec^2 (try 40 for float-down)
       alpha: 0.95,            // start alpha
       fadePow: 1.6            // easing power (higher = stays visible longer then fades faster)
     };
+
+    // Keep a pristine copy for Reset
+    const DEFAULT_CFG = JSON.parse(JSON.stringify(CFG));
 
     /* ========= CANVAS SETUP ========= */
     const ctx = canvas.getContext("2d", { alpha: true });
@@ -86,66 +245,65 @@
     wrap.style.zIndex = "2147483647";
     wrap.innerHTML = `
       <?xml version="1.0" encoding="iso-8859-1"?>
-<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
-<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-	 viewBox="0 0 511.999 511.999" xml:space="preserve">
-<path style="fill:#F7EFD0;" d="M137.442,430.792c-2.708,0-5.343-1.405-6.794-3.919l-96.39-166.955c-1.4-2.424-1.4-5.413,0-7.837
-	l96.391-166.954c2.164-3.749,6.956-5.032,10.705-2.868c3.748,2.164,5.032,6.957,2.868,10.705L50.094,255.999l94.129,163.036
-	c2.164,3.748,0.88,8.541-2.868,10.705C140.119,430.453,138.772,430.792,137.442,430.792z"/>
-<path style="fill:#EDD7BE;" d="M5.491,292.897c-2.045,0.002-3.921-1.144-4.867-2.975c-0.948-1.832-0.806-4.041,0.362-5.733
-	L20.75,255.55L1.007,227.363c-1.185-1.694-1.334-3.909-0.39-5.748c0.941-1.841,2.824-2.996,4.876-2.996h86.772
-	c1.785,0,3.457,0.874,4.487,2.345l21.966,31.363c1.336,1.904,1.345,4.452,0.021,6.369L96.77,290.525
-	c-1.026,1.486-2.708,2.374-4.505,2.374L5.491,292.897z"/>
-<path style="fill:#603813;" d="M466.963,263.597H58.747c-4.328,0-7.837-3.508-7.837-7.837c0-4.329,3.509-7.837,7.837-7.837h408.216
-	c4.328,0,7.837,3.508,7.837,7.837C474.8,260.089,471.291,263.597,466.963,263.597z"/>
-<path style="fill:#FF8163;" d="M489.831,255.758c0,1.405-0.554,2.751-1.538,3.744l-36.217,36.522
-	c-5.116,5.164-11.917,8.009-19.154,8.009c-7.232,0-14.035-2.845-19.15-8.009c-5.118-5.161-7.935-12.027-7.935-19.33
-	s2.817-14.168,7.935-19.329l1.589-1.607l-1.589-1.605c-5.118-5.162-7.935-12.027-7.935-19.33c0-7.303,2.817-14.166,7.935-19.332
-	c5.115-5.161,11.917-8.007,19.15-8.007c7.236,0,14.039,2.846,19.154,8.007l36.217,36.524
-	C489.277,253.007,489.831,254.356,489.831,255.758z"/>
-<path style="opacity:0.1;enable-background:new    ;" d="M436.409,296.024c-5.118-5.161-7.935-12.027-7.935-19.33
-	s2.817-14.168,7.935-19.329l1.589-1.607l-1.589-1.605c-5.118-5.162-7.935-12.027-7.935-19.33c0-7.303,2.817-14.166,7.935-19.332
-	c2.306-2.327,4.957-4.179,7.834-5.515c-3.505-1.629-7.346-2.492-11.32-2.492c-7.232,0-14.035,2.846-19.15,8.007
-	c-5.118,5.166-7.935,12.029-7.935,19.332s2.817,14.168,7.935,19.33l1.589,1.605l-1.589,1.607
-	c-5.118,5.161-7.935,12.026-7.935,19.329c0,7.303,2.817,14.169,7.935,19.33c5.115,5.164,11.917,8.009,19.15,8.009
-	c3.974,0,7.815-0.863,11.32-2.493C441.366,300.204,438.715,298.354,436.409,296.024z"/>
-<path style="fill:#EED063;" d="M196.764,66.288h-3.336c1.154-4.108,1.784-8.437,1.784-12.917c0-26.125-20.982-47.304-46.866-47.304
-	S101.48,27.246,101.48,53.371c0,26.124,20.982,47.303,46.866,47.303c1.672,0,48.417-0.038,48.417-0.038
-	c58.168,0,105.493,47.766,105.493,106.475v99.608c0,58.71-47.325,106.473-105.493,106.473c0,0-43.892-1.868-48.417-1.868
-	c-25.884,0-46.866,21.178-46.866,47.304c0,26.124,20.982,47.305,46.866,47.305c25.883,0,46.866-21.181,46.866-47.305
-	c0-3.82-0.461-7.529-1.307-11.085h2.86c76.932,0,139.522-63.176,139.522-140.824v-99.608
-	C336.286,129.461,273.698,66.288,196.764,66.288z"/>
-<path style="fill:#FFC529;" d="M344.796,317.02c0,9.485-7.616,17.174-17.017,17.174h-22.12c-9.398,0-17.014-7.69-17.014-17.174
-	V196.805c0-9.483,7.616-17.173,17.014-17.173h22.12c9.4,0,17.017,7.69,17.017,17.173V317.02z"/>
-<rect x="288.649" y="219.893" style="fill:#F9EEB7;" width="56.151" height="72.215"/>
-<path style="opacity:0.1;enable-background:new    ;" d="M310.88,317.02V196.805c0-9.464,7.586-17.138,16.957-17.17
-	c-0.02,0-0.039-0.003-0.059-0.003h-22.12c-9.398,0-17.014,7.69-17.014,17.173V317.02c0,9.485,7.616,17.174,17.014,17.174h22.12
-	c0.02,0,0.039-0.003,0.059-0.003C318.466,334.16,310.88,326.485,310.88,317.02z"/>
-<g>
-	<path style="fill:#F9EEB7;" d="M148.347,68.196c-8.1,0-14.689-6.65-14.689-14.826s6.589-14.826,14.689-14.826
-		c8.098,0,14.688,6.65,14.688,14.826S156.446,68.196,148.347,68.196z"/>
-	<path style="fill:#F9EEB7;" d="M148.347,473.453c-8.1,0-14.689-6.651-14.689-14.826c0-8.174,6.589-14.825,14.689-14.825
-		c8.098,0,14.688,6.65,14.688,14.825S156.446,473.453,148.347,473.453z"/>
-</g>
-<path style="fill:#FF8163;" d="M399.582,131.006c-1.005,0-1.971-0.404-2.679-1.12l-26.144-26.445
-	c-5.5-5.557-7.22-14.08-4.337-21.348c2.928-7.38,10.222-12.413,18.173-12.416c5.229,0.002,10.142,2.059,13.84,5.795l1.147,1.16
-	l1.15-1.16c3.694-3.737,8.611-5.793,13.838-5.795c7.951,0.003,15.246,5.035,18.173,12.416c2.882,7.266,1.162,15.79-4.335,21.348
-	l-26.145,26.445C401.554,130.604,400.589,131.006,399.582,131.006z"/>
-<g>
-	<path style="fill:#FFAA99;" d="M480.073,180.296c-0.865-0.002-1.696-0.348-2.306-0.968l-22.5-22.755
-		c-4.774-4.831-6.241-12.266-3.657-18.552c2.572-6.255,8.788-10.504,15.566-10.504c4.5,0,8.727,1.772,11.909,4.985l0.99,1.001
-		l0.99-0.999c3.179-3.215,7.408-4.987,11.908-4.987c6.771,0.003,13.004,4.243,15.564,10.504c2.573,6.291,1.123,13.714-3.657,18.549
-		l-22.498,22.756C481.766,179.948,480.937,180.294,480.073,180.296C479.207,180.294,480.937,180.294,480.073,180.296z"/>
-	<path style="fill:#FFAA99;" d="M489.472,81.339c-0.656,0.001-1.286-0.266-1.75-0.734l-17.054-17.247
-		c-3.621-3.661-4.728-9.298-2.774-14.063c1.946-4.745,6.669-7.959,11.803-7.962c3.407,0,6.613,1.341,9.024,3.779l0.751,0.759
-		l0.749-0.755c2.41-2.442,5.615-3.783,9.026-3.783c5.135,0.003,9.856,3.217,11.799,7.962c1.952,4.764,0.847,10.402-2.773,14.063
-		l-17.055,17.247C490.755,81.073,490.124,81.339,489.472,81.339C488.816,81.34,490.124,81.339,489.472,81.339z"/>
-</g>
-<path style="opacity:0.1;enable-background:new    ;" d="M27.728,292.897c-2.045,0.002-3.922-1.144-4.867-2.975
-	c-0.949-1.832-0.807-4.041,0.362-5.733l19.765-28.638l-19.744-28.188c-1.185-1.694-1.334-3.909-0.391-5.748
-	c0.941-1.841,2.825-2.996,4.877-2.996H5.491c-2.051,0-3.934,1.155-4.876,2.996c-0.944,1.839-0.794,4.054,0.39,5.748L20.75,255.55
-	L0.987,284.189c-1.168,1.693-1.309,3.902-0.362,5.733c0.946,1.831,2.822,2.977,4.867,2.975L27.728,292.897L27.728,292.897z"/>
-</svg>
+      <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        viewBox="0 0 511.999 511.999" xml:space="preserve">
+        <path style="fill:#F7EFD0;" d="M137.442,430.792c-2.708,0-5.343-1.405-6.794-3.919l-96.39-166.955c-1.4-2.424-1.4-5.413,0-7.837
+          l96.391-166.954c2.164-3.749,6.956-5.032,10.705-2.868c3.748,2.164,5.032,6.957,2.868,10.705L50.094,255.999l94.129,163.036
+          c2.164,3.748,0.88,8.541-2.868,10.705C140.119,430.453,138.772,430.792,137.442,430.792z"/>
+        <path style="fill:#EDD7BE;" d="M5.491,292.897c-2.045,0.002-3.921-1.144-4.867-2.975c-0.948-1.832-0.806-4.041,0.362-5.733
+          L20.75,255.55L1.007,227.363c-1.185-1.694-1.334-3.909-0.39-5.748c0.941-1.841,2.824-2.996,4.876-2.996h86.772
+          c1.785,0,3.457,0.874,4.487,2.345l21.966,31.363c1.336,1.904,1.345,4.452,0.021,6.369L96.77,290.525
+          c-1.026,1.486-2.708,2.374-4.505,2.374L5.491,292.897z"/>
+        <path style="fill:#603813;" d="M466.963,263.597H58.747c-4.328,0-7.837-3.508-7.837-7.837c0-4.329,3.509-7.837,7.837-7.837h408.216
+          c4.328,0,7.837,3.508,7.837,7.837C474.8,260.089,471.291,263.597,466.963,263.597z"/>
+        <path style="fill:#FF8163;" d="M489.831,255.758c0,1.405-0.554,2.751-1.538,3.744l-36.217,36.522
+          c-5.116,5.164-11.917,8.009-19.154,8.009c-7.232,0-14.035-2.845-19.15-8.009c-5.118-5.161-7.935-12.027-7.935-19.33
+          s2.817-14.168,7.935-19.329l1.589-1.607l-1.589-1.605c-5.118-5.162-7.935-12.027-7.935-19.33c0-7.303,2.817-14.166,7.935-19.332
+          c5.115-5.161,11.917-8.007,19.15-8.007c7.236,0,14.039,2.846,19.154,8.007l36.217,36.524
+          C489.277,253.007,489.831,254.356,489.831,255.758z"/>
+        <path style="opacity:0.1;enable-background:new    ;" d="M436.409,296.024c-5.118-5.161-7.935-12.027-7.935-19.33
+          s2.817-14.168,7.935-19.329l1.589-1.607l-1.589-1.605c-5.118-5.162-7.935-12.027-7.935-19.33c0-7.303,2.817-14.166,7.935-19.332
+          c2.306-2.327,4.957-4.179,7.834-5.515c-3.505-1.629-7.346-2.492-11.32-2.492c-7.232,0-14.035,2.846-19.15,8.007
+          c-5.118,5.166-7.935,12.029-7.935,19.332s2.817,14.168,7.935,19.33l1.589,1.605l-1.589,1.607
+          c-5.118,5.161-7.935,12.026-7.935,19.329c0,7.303,2.817,14.169,7.935,19.33c5.115,5.164,11.917,8.009,19.15,8.009
+          c3.974,0,7.815-0.863,11.32-2.493C441.366,300.204,438.715,298.354,436.409,296.024z"/>
+        <path style="fill:#EED063;" d="M196.764,66.288h-3.336c1.154-4.108,1.784-8.437,1.784-12.917c0-26.125-20.982-47.304-46.866-47.304
+          S101.48,27.246,101.48,53.371c0,26.124,20.982,47.303,46.866,47.303c1.672,0,48.417-0.038,48.417-0.038
+          c58.168,0,105.493,47.766,105.493,106.475v99.608c0,58.71-47.325,106.473-105.493,106.473c0,0-43.892-1.868-48.417-1.868
+          c-25.884,0-46.866,21.178-46.866,47.304c0,26.124,20.982,47.305,46.866,47.305c25.883,0,46.866-21.181,46.866-47.305
+          c0-3.82-0.461-7.529-1.307-11.085h2.86c76.932,0,139.522-63.176,139.522-140.824v-99.608
+          C336.286,129.461,273.698,66.288,196.764,66.288z"/>
+        <path style="fill:#FFC529;" d="M344.796,317.02c0,9.485-7.616,17.174-17.017,17.174h-22.12c-9.398,0-17.014-7.69-17.014-17.174
+          V196.805c0-9.483,7.616-17.173,17.014-17.173h22.12c9.4,0,17.017,7.69,17.017,17.173V317.02z"/>
+        <rect x="288.649" y="219.893" style="fill:#F9EEB7;" width="56.151" height="72.215"/>
+        <path style="opacity:0.1;enable-background:new    ;" d="M310.88,317.02V196.805c0-9.464,7.586-17.138,16.957-17.17
+          c-0.02,0-0.039-0.003-0.059-0.003h-22.12c-9.398,0-17.014,7.69-17.014,17.173V317.02c0,9.485,7.616,17.174,17.014,17.174h22.12
+          c0.02,0,0.039-0.003,0.059-0.003C318.466,334.16,310.88,326.485,310.88,317.02z"/>
+        <g>
+          <path style="fill:#F9EEB7;" d="M148.347,68.196c-8.1,0-14.689-6.65-14.689-14.826s6.589-14.826,14.689-14.826
+            c8.098,0,14.688,6.65,14.688,14.826S156.446,68.196,148.347,68.196z"/>
+          <path style="fill:#F9EEB7;" d="M148.347,473.453c-8.1,0-14.689-6.651-14.689-14.826c0-8.174,6.589-14.825,14.689-14.825
+            c8.098,0,14.688,6.65,14.688,14.825S156.446,473.453,148.347,473.453z"/>
+        </g>
+        <path style="fill:#FF8163;" d="M399.582,131.006c-1.005,0-1.971-0.404-2.679-1.12l-26.144-26.445
+          c-5.5-5.557-7.22-14.08-4.337-21.348c2.928-7.38,10.222-12.413,18.173-12.416c5.229,0.002,10.142,2.059,13.84,5.795l1.147,1.16
+          l1.15-1.16c3.694-3.737,8.611-5.793,13.838-5.795c7.951,0.003,15.246,5.035,18.173,12.416c2.882,7.266,1.162,15.79-4.335,21.348
+          l-26.145,26.445C401.554,130.604,400.589,131.006,399.582,131.006z"/>
+        <g>
+          <path style="fill:#FFAA99;" d="M480.073,180.296c-0.865-0.002-1.696-0.348-2.306-0.968l-22.5-22.755
+            c-4.774-4.831-6.241-12.266-3.657-18.552c2.572-6.255,8.788-10.504,15.566-10.504c4.5,0,8.727,1.772,11.909,4.985l0.99,1.001
+            l0.99-0.999c3.179-3.215,7.408-4.987,11.908-4.987c6.771,0.003,13.004,4.243,15.564,10.504c2.573,6.291,1.123,13.714-3.657,18.549
+            l-22.498,22.756C481.766,179.948,480.937,180.294,480.073,180.296C479.207,180.294,480.937,180.294,480.073,180.296z"/>
+          <path style="fill:#FFAA99;" d="M489.472,81.339c-0.656,0.001-1.286-0.266-1.75-0.734l-17.054-17.247
+            c-3.621-3.661-4.728-9.298-2.774-14.063c1.946-4.745,6.669-7.959,11.803-7.962c3.407,0,6.613,1.341,9.024,3.779l0.751,0.759
+            l0.749-0.755c2.41-2.442,5.615-3.783,9.026-3.783c5.135,0.003,9.856,3.217,11.799,7.962c1.952,4.764,0.847,10.402-2.773,14.063
+            l-17.055,17.247C490.755,81.073,490.124,81.339,489.472,81.339C488.816,81.34,490.124,81.339,489.472,81.339z"/>
+        </g>
+        <path style="opacity:0.1;enable-background:new    ;" d="M27.728,292.897c-2.045,0.002-3.922-1.144-4.867-2.975
+          c-0.949-1.832-0.807-4.041,0.362-5.733l19.765-28.638l-19.744-28.188c-1.185-1.694-1.334-3.909-0.391-5.748
+          c0.941-1.841,2.825-2.996,4.877-2.996H5.491c-2.051,0-3.934,1.155-4.876,2.996c-0.944,1.839-0.794,4.054,0.39,5.748L20.75,255.55
+          L0.987,284.189c-1.168,1.693-1.309,3.902-0.362,5.733c0.946,1.831,2.822,2.977,4.867,2.975L27.728,292.897L27.728,292.897z"/>
+      </svg>
     `;
     mount.appendChild(wrap);
 
@@ -176,20 +334,14 @@
     const rand = (a, b) => a + Math.random() * (b - a);
     const randSign = () => (Math.random() < 0.5 ? -1 : 1);
 
-    /* ========= SPRITE: SVG -> Image =========
-       Put ANY small SVGs you want in this array. They render as particles.
-       Tip: keep them simple (few paths) for performance.
-    */
+    /* ========= SPRITE: SVG -> Image ========= */
     const SPRITES = [
-      // sparkle
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
         <path fill="#ffd86b" d="M32 2l6 20 20 6-20 6-6 20-6-20-20-6 20-6z"/>
       </svg>`,
-      // heart
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
         <path fill="#ff5a8a" d="M32 56S6 41 6 22c0-8 6-14 14-14 5 0 9 2 12 6 3-4 7-6 12-6 8 0 14 6 14 14 0 19-26 34-26 34z"/>
       </svg>`,
-      // paw
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
         <path fill="#7bdcff" d="M20 34c-5 0-9-5-9-10s4-9 9-9 9 4 9 9-4 10-9 10zm24 0c-5 0-9-5-9-10s4-9 9-9 9 4 9 9-4 10-9 10z"/>
         <path fill="#7bdcff" d="M32 58c-10 0-18-6-18-14 0-7 6-13 18-13s18 6 18 13c0 8-8 14-18 14z"/>
@@ -211,7 +363,7 @@
     const particles = [];
     let spawnCarry = 0;
 
-    function spawnParticle(px, py, speed) {
+    function spawnParticle(px, py) {
       const img = spriteImages[(Math.random() * spriteImages.length) | 0];
 
       const size0 = rand(CFG.minSize, CFG.maxSize);
@@ -325,7 +477,7 @@
       spawnCarry += rate * dt;
       while (spawnCarry >= 1) {
         spawnCarry -= 1;
-        spawnParticle(x, y, speed);
+        spawnParticle(x, y);
       }
 
       updateAndDrawParticles(dt);
@@ -343,16 +495,237 @@
     }
     requestAnimationFrame((t) => { lastT = t; tick(t); });
 
-    // tiny API
+    // tiny API (still works)
     window.CursorCat = {
       setColor: (c) => mount.style.color = c,
       setSize: (s) => { CFG.size = s; svg.setAttribute("width", s); svg.setAttribute("height", s); },
-
-      // sprite controls
       setSpriteSize: (min, max) => { CFG.minSize = min; CFG.maxSize = max; },
       setSpawnRate: (idle, moving) => { CFG.spawnRateIdle = idle; CFG.spawnRateMoving = moving; },
       setLife: (min, max) => { CFG.lifeMin = min; CFG.lifeMax = max; }
     };
+
+    /* ========= SETTINGS PANEL ========= */
+    const toggleBtn = document.getElementById("cfg-toggle");
+    const panel = document.getElementById("cfg-panel");
+    const grid = document.getElementById("cfg-grid");
+    const exportBtn = document.getElementById("cfg-export");
+    const importBtn = document.getElementById("cfg-import-btn");
+    const importInput = document.getElementById("cfg-import");
+    const resetBtn = document.getElementById("cfg-reset");
+
+    // Describe how each CFG key should be edited
+    const FIELDS = [
+      { key: "size",            label: "Size",               help: "px",        type: "range+number", min: 16,  max: 256, step: 1,   onChange: () => { svg.setAttribute("width", CFG.size); svg.setAttribute("height", CFG.size); } },
+      { key: "followStrength",  label: "Follow strength",        help: "accel factor", type: "range+number", min: 0,   max: 0.4, step: 0.01 },
+      { key: "damping",         label: "Damping",                help: "0..1",      type: "range+number", min: 0.5, max: 0.98, step: 0.01 },
+      { key: "maxSpeed",        label: "Max speed",              help: "px/frame-ish", type: "range+number", min: 1,   max: 40,  step: 0.5 },
+      { key: "rotateFollow",    label: "Rotate follow",          help: "0..1",      type: "range+number", min: 0,   max: 0.4, step: 0.01 },
+      { key: "bankAmount",      label: "Bank amount",            help: "deg",       type: "range+number", min: 0,   max: 60,  step: 1 },
+      { key: "angleOffset",     label: "Angle offset",           help: "deg",       type: "number",       min: -360, max: 360, step: 1 },
+
+      { key: "spawnRateIdle",   label: "Spawn rate (idle)",      help: "sprites/sec", type: "range+number", min: 0,   max: 60,  step: 1 },
+      { key: "spawnRateMoving", label: "Spawn rate (moving)",    help: "sprites/sec", type: "range+number", min: 0,   max: 120, step: 1 },
+
+      { key: "minSize",         label: "Sprite min size",        help: "px",        type: "range+number", min: 2,   max: 200, step: 1 },
+      { key: "maxSize",         label: "Sprite max size",        help: "px",        type: "range+number", min: 2,   max: 240, step: 1 },
+
+      { key: "lifeMin",         label: "Life min",               help: "sec",       type: "range+number", min: 0.05, max: 10,  step: 0.05 },
+      { key: "lifeMax",         label: "Life max",               help: "sec",       type: "range+number", min: 0.05, max: 12,  step: 0.05 },
+
+      { key: "shrinkTo",        label: "Shrink to",              help: "end scale", type: "range+number", min: 0,   max: 1,   step: 0.01 },
+
+      { key: "driftMin",        label: "Drift min",              help: "px/sec",    type: "range+number", min: 0,   max: 300, step: 1 },
+      { key: "driftMax",        label: "Drift max",              help: "px/sec",    type: "range+number", min: 0,   max: 500, step: 1 },
+
+      { key: "inheritVelocity", label: "Inherit velocity",       help: "0..1",      type: "range+number", min: 0,   max: 1,   step: 0.01 },
+
+      { key: "randomSpin",      label: "Random spin",            help: "deg/sec",   type: "range+number", min: 0,   max: 720, step: 5 },
+
+      { key: "gravity",         label: "Gravity",                help: "px/sec²",   type: "range+number", min: -2000, max: 4000, step: 10 },
+
+      { key: "alpha",           label: "Start alpha",            help: "0..1",      type: "range+number", min: 0,   max: 1,   step: 0.01 },
+      { key: "fadePow",         label: "Fade power",             help: "easing",    type: "range+number", min: 0.2, max: 4,   step: 0.05 },
+    ];
+
+    function coerceNumber(value, step) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return null;
+      // Keep precision reasonable for fractional steps
+      const decimals = (String(step).split(".")[1] || "").length;
+      if (decimals > 0) return Number(n.toFixed(decimals));
+      return n;
+    }
+
+    function applyFieldConstraints() {
+      // Some sanity coupling:
+      if (CFG.maxSize < CFG.minSize) CFG.maxSize = CFG.minSize;
+      if (CFG.lifeMax < CFG.lifeMin) CFG.lifeMax = CFG.lifeMin;
+      if (CFG.driftMax < CFG.driftMin) CFG.driftMax = CFG.driftMin;
+      if (CFG.spawnRateMoving < CFG.spawnRateIdle) CFG.spawnRateMoving = CFG.spawnRateIdle;
+    }
+
+    function setCFGValue(key, value) {
+      CFG[key] = value;
+      applyFieldConstraints();
+
+      // field-specific onChange hooks
+      const field = FIELDS.find(f => f.key === key);
+      if (field && typeof field.onChange === "function") field.onChange();
+
+      // keep UI in sync when constraints adjust related values
+      syncUIFromCFG();
+    }
+
+    const uiByKey = new Map();
+
+    function makeRow(field) {
+      const row = document.createElement("div");
+      row.className = "cfg-row";
+
+      const label = document.createElement("label");
+      label.textContent = field.label;
+      if (field.help) {
+        const small = document.createElement("small");
+        small.textContent = field.help;
+        label.appendChild(small);
+      }
+
+      const controls = document.createElement("div");
+      controls.className = "cfg-controls";
+
+      let range = null;
+      let number = null;
+
+      if (field.type === "range+number") {
+        range = document.createElement("input");
+        range.type = "range";
+        range.min = field.min;
+        range.max = field.max;
+        range.step = field.step;
+
+        number = document.createElement("input");
+        number.type = "number";
+        number.min = field.min;
+        number.max = field.max;
+        number.step = field.step;
+
+        const onInput = (raw) => {
+          const n = coerceNumber(raw, field.step);
+          if (n === null) return;
+          setCFGValue(field.key, clamp(n, Number(field.min), Number(field.max)));
+        };
+
+        range.addEventListener("input", () => onInput(range.value), { passive: true });
+        number.addEventListener("input", () => onInput(number.value), { passive: true });
+
+        controls.appendChild(range);
+        controls.appendChild(number);
+      } else {
+        number = document.createElement("input");
+        number.type = "number";
+        number.min = field.min;
+        number.max = field.max;
+        number.step = field.step;
+
+        number.addEventListener("input", () => {
+          const n = coerceNumber(number.value, field.step);
+          if (n === null) return;
+          setCFGValue(field.key, clamp(n, Number(field.min), Number(field.max)));
+        }, { passive: true });
+
+        controls.appendChild(number);
+      }
+
+      row.appendChild(label);
+      row.appendChild(controls);
+
+      uiByKey.set(field.key, { range, number, field });
+      return row;
+    }
+
+    function buildUI() {
+      grid.innerHTML = "";
+      for (const field of FIELDS) grid.appendChild(makeRow(field));
+      syncUIFromCFG();
+    }
+
+    function syncUIFromCFG() {
+      for (const [key, ui] of uiByKey.entries()) {
+        if (!ui) continue;
+        const val = CFG[key];
+        if (ui.range) ui.range.value = String(val);
+        if (ui.number) ui.number.value = String(val);
+      }
+    }
+
+    function downloadJSON(filename, obj) {
+      const json = JSON.stringify(obj, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+    }
+
+    function safeApplyConfig(partial) {
+      if (!partial || typeof partial !== "object") return;
+
+      for (const field of FIELDS) {
+        const key = field.key;
+        if (!(key in partial)) continue;
+        const n = Number(partial[key]);
+        if (!Number.isFinite(n)) continue;
+        // clamp to field min/max
+        const clamped = clamp(n, Number(field.min), Number(field.max));
+        CFG[key] = clamped;
+      }
+      applyFieldConstraints();
+      // apply any hooks (size needs immediate SVG update)
+      const sizeField = FIELDS.find(f => f.key === "size");
+      if (sizeField && typeof sizeField.onChange === "function") sizeField.onChange();
+      syncUIFromCFG();
+    }
+
+    // Toggle panel
+    toggleBtn.addEventListener("click", () => {
+      panel.classList.toggle("open");
+    });
+
+    // Export
+    exportBtn.addEventListener("click", () => {
+      downloadJSON("cursor-cat-config.json", CFG);
+    });
+
+    // Import (button triggers hidden input)
+    importBtn.addEventListener("click", () => importInput.click());
+    importInput.addEventListener("change", async () => {
+      const file = importInput.files && importInput.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        safeApplyConfig(parsed);
+      } catch (e) {
+        console.warn("Failed to import config:", e);
+        alert("Could not import JSON config.");
+      } finally {
+        importInput.value = "";
+      }
+    });
+
+    // Reset
+    resetBtn.addEventListener("click", () => {
+      safeApplyConfig(DEFAULT_CFG);
+    });
+
+    buildUI();
   })();
   </script>
 </body>

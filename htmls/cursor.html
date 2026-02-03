@@ -772,16 +772,8 @@
     });
 
     /* ========= INIT: load saved or defaults ========= */
-    const loaded = loadConfigFromStorage({ silent: true });
-    if (!loaded) {
-      // ensure defaults visible + saved once
-      applyMainUrl();
-      applyMainSize();
-      syncUI();
-      showStatus("Using defaults (saved locally).", true);
-    } else {
-      showStatus("Loaded saved config ✅", true);
-    }
+
+    syncUI();
 
     /* ========= tiny API ========= */
     window.CursorCat = {

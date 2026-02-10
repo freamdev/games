@@ -1,0 +1,1681 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Party + Town/Talents Tabs</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --border:#243244;
+      --text:#e8eef7;
+      --muted:#aab6c5;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+
+      --good:#7cc4ff;
+      --bad:#ff7c7c;
+      --gold:#ffd27a;
+      --wood:#9be39b;
+
+      --panelA: rgba(16,24,35,.92);
+      --panelB: rgba(15,22,32,.92);
+      --card: rgba(255,255,255,.02);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 30% 10%, #132238 0%, var(--bg) 60%);
+      color:var(--text);
+      height:100vh;
+      overflow:hidden;
+    }
+
+    .layout{
+      display:flex;
+      height:100vh;
+      width:100vw;
+    }
+
+    /* Left tab (30%) */
+    .leftTab{
+      width:30vw;
+      min-width:360px;
+      max-width:520px;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+      border-right:1px solid var(--border);
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      box-shadow: var(--shadow);
+    }
+    .tabHeader{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:14px 14px;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panelA);
+    }
+    .headerTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .tabHeader h1{
+      font-size:14px;
+      margin:0;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      margin:0;
+      line-height:1.3;
+      text-align:right;
+    }
+
+    .timers{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    .timerCard{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius:14px;
+      padding:10px 10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .timerTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .timerTop b{ color:var(--text); font-weight:900; }
+    .bar{
+      height:10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      overflow:hidden;
+    }
+    .barFill{
+      height:100%;
+      width:0%;
+      background: rgba(124,196,255,.9);
+      transition: width .10s linear;
+    }
+    .barFill.loot{ background: rgba(255,210,122,.85); }
+    .barFill.gather{ background: rgba(155,227,155,.85); }
+
+    .rows{
+      flex:1;
+      overflow:auto;
+      padding-right:6px;
+    }
+    .rows::-webkit-scrollbar{ width:10px; }
+    .rows::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+    }
+
+    .rowCard{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(16,24,35,.9), rgba(15,22,32,.9));
+      border-radius: var(--radius);
+      padding:12px;
+      margin-bottom:12px;
+      display:grid;
+      grid-template-columns: 1fr 140px;
+      gap:12px;
+      align-items:stretch;
+    }
+    .rowLeft{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:0;
+    }
+    .rowTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .rowTitle .name{
+      font-weight:950;
+      font-size:13px;
+      color:var(--text);
+      opacity:.95;
+    }
+    .rowTitle .meta{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .bigIcons{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+    }
+    .iconTile{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      border-radius:14px;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      min-height:86px;
+    }
+    .iconTile svg{
+      width:46px;
+      height:46px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    }
+    .iconLabel{
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.6px;
+    }
+
+    .gearRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .gearSlot{
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      border:1px dashed rgba(255,255,255,.18);
+      background: rgba(0,0,0,.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition: transform .08s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
+    }
+    .gearSlot:hover{
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,.28);
+      background: rgba(255,255,255,.04);
+    }
+    .gearSlot svg{ width:20px; height:20px; opacity:.95; }
+    .gearSlot[data-gear="empty"] svg{ display:none; }
+    .gearLegend{
+      margin-left:auto;
+      font-size:11px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    /* --- Right side of each party row --- */
+    .rowRight{
+      border-left:1px solid rgba(255,255,255,.08);
+      padding-left:12px;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+      gap:10px;
+    }
+    .radioGroup{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:auto; /* push radios down */
+    }
+    .radioOpt{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      color:var(--text);
+    }
+    .radioOpt input{
+      transform: translateY(1px);
+      accent-color: var(--good);
+    }
+    .radioOpt input:disabled + span{
+      color: rgba(232,238,247,.35);
+    }
+
+    /* --- Task / Enemy Viz --- */
+    .taskViz{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius:14px;
+      padding:10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:64px;
+    }
+    .taskIcon{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+    }
+    .taskIcon svg{
+      width:28px;
+      height:28px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    }
+    .taskText{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .taskText .top{
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.6px;
+    }
+    .taskText .main{
+      font-size:12px;
+      color:var(--text);
+      font-weight:900;
+      line-height:1.1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* Right side shell */
+    .rightMain{
+      flex:1;
+      padding:18px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    /* Top resources always visible */
+    .rightHeader{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      padding:16px 16px;
+      background: rgba(11,15,20,.78);
+      backdrop-filter: blur(10px);
+    }
+    .rightHeader h2{
+      margin:0 0 6px 0;
+      font-size:18px;
+    }
+    .rightHeader p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.45;
+      font-size:13px;
+      max-width: 720px;
+    }
+
+    .statusPills{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-end;
+      align-items:flex-start;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+      height:fit-content;
+    }
+    .pill strong{
+      color:var(--text);
+      font-weight:950;
+      margin-left:2px;
+    }
+    .pillIcon{
+      width:16px;
+      height:16px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .pillIcon svg{ width:16px; height:16px; }
+
+    .pill button{
+      all:unset;
+      cursor:pointer;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color:var(--text);
+      font-weight:900;
+      margin-left:6px;
+    }
+    .pill button:hover{
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.04);
+    }
+
+    /* Right content tabs */
+    .contentCard{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      background: var(--card);
+      padding:14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.18);
+    }
+    .tabBar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .tabBtns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .tabBtn{
+      all:unset;
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.20);
+      color: var(--muted);
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+      transition: border-color .12s ease, background .12s ease, transform .10s ease;
+    }
+    .tabBtn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(124,196,255,.35);
+      background: rgba(124,196,255,.06);
+      color: var(--text);
+    }
+    .tabBtn.active{
+      border-color: rgba(124,196,255,.55);
+      background: rgba(124,196,255,.10);
+      color: var(--text);
+    }
+    .tabHint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    /* Town */
+    .buildGrid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap:14px;
+    }
+    .building{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      padding:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .10s ease, border-color .12s ease, background .12s ease;
+      min-height:205px;
+    }
+    .building:hover{
+      transform: translateY(-2px);
+      border-color: rgba(124,196,255,.35);
+      background: linear-gradient(180deg, rgba(124,196,255,.06), rgba(255,255,255,.01));
+    }
+    .building.locked{
+      cursor:not-allowed;
+      opacity:.92;
+    }
+    .building.locked:hover{
+      transform:none;
+      border-color: rgba(255,124,124,.25);
+      background: linear-gradient(180deg, rgba(255,124,124,.04), rgba(255,255,255,.01));
+    }
+
+    .bTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .bIcon{
+      width:54px;
+      height:54px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+    }
+    .bIcon svg{
+      width:34px;
+      height:34px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    }
+    .bTitle{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+      flex:1;
+    }
+    .bName{
+      font-weight:950;
+      letter-spacing:.2px;
+      font-size:14px;
+      margin:0;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .bSub{
+      font-size:12px;
+      color:var(--muted);
+      margin:0;
+      line-height:1.25;
+    }
+    .bLevel{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      color:var(--text);
+      font-weight:950;
+      white-space:nowrap;
+    }
+    .bBody{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      flex:1;
+    }
+    .barWrap{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .barLabel{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .costLine{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:4px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .costPair{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .costItem{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      color: var(--text);
+      font-weight:950;
+    }
+    .costItem .sub{
+      color:var(--muted);
+      font-weight:800;
+      margin-left:2px;
+    }
+    .costItem svg{ width:16px; height:16px; }
+    .costItem.gold{ border-color: rgba(255,210,122,.20); }
+    .costItem.wood{ border-color: rgba(155,227,155,.20); }
+
+    .cta{
+      padding:8px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color:var(--text);
+      font-weight:950;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    /* Talents */
+    .talentWrap{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      padding:14px;
+      overflow:hidden;
+    }
+    .talentStage{
+      width:100%;
+      min-height: 560px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background: radial-gradient(900px 520px at 30% 10%, rgba(124,196,255,.07), rgba(0,0,0,.18));
+      position:relative;
+      overflow:hidden;
+    }
+    .talentStage svg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+    }
+
+    /* Toast */
+    .toast{
+      position:fixed;
+      left: calc(30vw + 18px);
+      bottom: 16px;
+      padding:10px 12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      color:var(--text);
+      font-size:12px;
+      box-shadow: var(--shadow);
+      opacity:0;
+      transform: translateY(6px);
+      transition: opacity .16s ease, transform .16s ease;
+      pointer-events:none;
+      max-width: min(620px, 60vw);
+      line-height:1.35;
+      z-index: 50;
+    }
+    .toast.show{ opacity:1; transform: translateY(0); }
+
+    @media (max-width: 1100px){
+      .buildGrid{ grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+    }
+    @media (max-width: 980px){
+      body{ overflow:auto; }
+      .layout{ flex-direction:column; height:auto; }
+      .leftTab{ width:100%; max-width:none; min-width:0; }
+      .toast{ left:16px; }
+      .buildGrid{ grid-template-columns: 1fr; }
+      .statusPills{ justify-content:flex-start; }
+      .rightHeader{ position: sticky; top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- LEFT: always visible -->
+    <aside class="leftTab">
+      <div class="tabHeader">
+        <div class="headerTop">
+          <div>
+            <h1 style="margin-bottom:6px;">Party</h1>
+            <div style="font-size:12px;color:var(--muted);line-height:1.25;">
+              <b>Climb</b> increases highest climbed level on its timer.<br/>
+              <b>Loot</b>/<b>Gather</b> pay out on their own timers.
+            </div>
+          </div>
+          <p class="hint">
+            Gear slots: click to cycle<br/>
+            Only one group can be <b>Climb</b>
+          </p>
+        </div>
+
+        <div class="timers" aria-label="Timers">
+          <div class="timerCard">
+            <div class="timerTop">
+              <span>Climb timer: <b id="climbTimerText">—</b></span>
+              <span>Now: <b id="climbTimerSec">—</b>s</span>
+            </div>
+            <div class="bar"><div id="climbBar" class="barFill"></div></div>
+          </div>
+
+          <div class="timerCard">
+            <div class="timerTop">
+              <span>Loot timer: <b id="lootTimerText">—</b></span>
+              <span>Now: <b id="lootTimerSec">—</b>s</span>
+            </div>
+            <div class="bar"><div id="lootBar" class="barFill loot"></div></div>
+          </div>
+
+          <div class="timerCard">
+            <div class="timerTop">
+              <span>Gather timer: <b id="gatherTimerText">—</b></span>
+              <span>Now: <b id="gatherTimerSec">—</b>s</span>
+            </div>
+            <div class="bar"><div id="gatherBar" class="barFill gather"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="rows" class="rows"></div>
+    </aside>
+
+    <!-- RIGHT: resources always visible at top + tabbed content -->
+    <main class="rightMain">
+      <div class="rightHeader">
+        <div>
+          <h2>Dashboard</h2>
+          <p>
+            Top resources stay visible. Use the tabs below to switch between <b>Town</b> and <b>Talents</b>.
+          </p>
+        </div>
+
+        <div class="statusPills">
+          <div class="pill" title="Highest climbed level (increases when climb timer completes)">
+            <span class="pillIcon" aria-hidden="true" id="mountainIcon"></span>
+            Highest climbed: <strong id="highestClimbed">1</strong>
+          </div>
+
+          <div class="pill" title="Gold">
+            <span class="pillIcon" aria-hidden="true" id="goldIcon"></span>
+            <strong id="goldVal">0</strong>
+          </div>
+
+          <div class="pill" title="Wood">
+            <span class="pillIcon" aria-hidden="true" id="woodIcon"></span>
+            <strong id="woodVal">0</strong>
+          </div>
+
+          <div class="pill">
+            Total building levels: <strong id="totalLevels">—</strong>
+            <button id="resetBtn" type="button" title="Reset all buildings/resources/timers">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="contentCard" aria-label="Content tabs">
+        <div class="tabBar">
+          <div class="tabBtns" role="tablist" aria-label="Town and Talents tabs">
+            <button class="tabBtn active" id="tabTownBtn" role="tab" aria-selected="true" aria-controls="tabTown" tabindex="0">
+              Town
+            </button>
+            <button class="tabBtn" id="tabTalentsBtn" role="tab" aria-selected="false" aria-controls="tabTalents" tabindex="-1">
+              Talents
+            </button>
+          </div>
+          <div class="tabHint" id="tabHint">
+            Town: upgrade buildings • Talents: static skill tree
+          </div>
+        </div>
+
+        <div id="tabTown" role="tabpanel" aria-labelledby="tabTownBtn">
+          <div id="buildGrid" class="buildGrid" aria-label="Buildings grid"></div>
+        </div>
+
+        <div id="tabTalents" role="tabpanel" aria-labelledby="tabTalentsBtn" hidden>
+          <div class="talentWrap">
+            <div class="talentStage" aria-label="Static skill tree">
+              <svg id="talentSvg" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ---------- SVG HELPERS ----------
+    function svgIcon(inner, opts = {}){
+      const vb = opts.viewBox || "0 0 24 24";
+      const sw = opts.strokeWidth || 2;
+      const fill = opts.fill || "none";
+      return `
+        <svg viewBox="${vb}" fill="${fill}" xmlns="http://www.w3.org/2000/svg"
+             stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">
+          ${inner}
+        </svg>
+      `;
+    }
+
+    // Resource/Status icons
+    const ICONS = {
+      gold: svgIcon(`
+        <path d="M12 3c4.2 0 7 1.6 7 3.5S16.2 10 12 10 5 8.4 5 6.5 7.8 3 12 3z"/>
+        <path d="M5 6.5V12c0 1.9 2.8 3.5 7 3.5s7-1.6 7-3.5V6.5" opacity=".65"/>
+        <path d="M5 12v5.5c0 1.9 2.8 3.5 7 3.5s7-1.6 7-3.5V12" opacity=".45"/>
+      `),
+      wood: svgIcon(`
+        <path d="M7 21V9c0-3 2-5 5-5s5 2 5 5v12" />
+        <path d="M7 14h10" opacity=".6"/>
+        <path d="M9 9c.8 1 1.8 1.5 3 1.5S14.2 10 15 9" opacity=".6"/>
+        <path d="M11 21v-6" opacity=".5"/>
+      `),
+      mountain: svgIcon(`
+        <path d="M3 20l7-12 4 7 2-3 5 8z"/>
+        <path d="M10 8l1.5-2.5L13 8" opacity=".65"/>
+        <path d="M3 20h18" opacity=".55"/>
+      `),
+    };
+
+    document.getElementById("goldIcon").innerHTML = ICONS.gold;
+    document.getElementById("woodIcon").innerHTML = ICONS.wood;
+    document.getElementById("mountainIcon").innerHTML = ICONS.mountain;
+
+    // ---------- ENEMY ICONS ----------
+    const ENEMIES = {
+      undead: {
+        name: "Undead",
+        icon: svgIcon(`
+          <path d="M8 10a4 4 0 118 0v2c0 1.5-1 3-2.5 3.6V18a1 1 0 01-1 1h-1v-2h-2v2H9.5a1 1 0 01-1-1v-2.4C7 15 6 13.5 6 12v-2a4 4 0 012-3z"/>
+          <path d="M10 12h0" />
+          <path d="M14 12h0" />
+          <path d="M10.2 14.8c.9.7 2.7.7 3.6 0" opacity=".7"/>
+          <path d="M9 19v2" opacity=".6"/>
+          <path d="M15 19v2" opacity=".6"/>
+        `, { strokeWidth: 2.2 })
+      },
+      goblin: {
+        name: "Goblin",
+        icon: svgIcon(`
+          <path d="M7 10c-1.5-1-3-1-4 0 1 1.5 2.2 2.2 4 2" opacity=".75"/>
+          <path d="M17 10c1.5-1 3-1 4 0-1 1.5-2.2 2.2-4 2" opacity=".75"/>
+          <path d="M8 10c1-3 3-5 4-5s3 2 4 5v4c0 2-2 4-4 4s-4-2-4-4z"/>
+          <path d="M10.2 12h0" />
+          <path d="M13.8 12h0" />
+          <path d="M10.5 15c1 .8 2 .8 3 0" opacity=".7"/>
+        `, { strokeWidth: 2.2 })
+      },
+      spider: {
+        name: "Cave Spider",
+        icon: svgIcon(`
+          <path d="M12 9c2.2 0 4 1.8 4 4s-1.8 4-4 4-4-1.8-4-4 1.8-4 4-4z"/>
+          <path d="M8 11L5 9" opacity=".75"/>
+          <path d="M8 13L4.5 13" opacity=".75"/>
+          <path d="M8 15L5 17" opacity=".75"/>
+          <path d="M16 11L19 9" opacity=".75"/>
+          <path d="M16 13L19.5 13" opacity=".75"/>
+          <path d="M16 15L19 17" opacity=".75"/>
+          <path d="M11 10h0" />
+          <path d="M13 10h0" />
+        `, { strokeWidth: 2.2 })
+      },
+      orc: {
+        name: "Orc Raider",
+        icon: svgIcon(`
+          <path d="M8 10c0-3 2-5 4-5s4 2 4 5v3c0 2.6-2 4.7-4 4.7S8 15.6 8 13z"/>
+          <path d="M9 9l-2-2" opacity=".7"/>
+          <path d="M15 9l2-2" opacity=".7"/>
+          <path d="M10.2 12h0" />
+          <path d="M13.8 12h0" />
+          <path d="M10 15c1.2-1 2.8-1 4 0" opacity=".7"/>
+          <path d="M9 18l-1 3" opacity=".6"/>
+          <path d="M15 18l1 3" opacity=".6"/>
+        `, { strokeWidth: 2.2 })
+      }
+    };
+
+    const ENEMY_KEYS = Object.keys(ENEMIES);
+    function randEnemyKey(){
+      return ENEMY_KEYS[Math.floor(Math.random() * ENEMY_KEYS.length)];
+    }
+
+    // ---------- CLASS ICONS ----------
+    const CLASS_ICONS = {
+      warrior: svgIcon(`
+        <path d="M12 3l7 7-2 2-3-3v12h-4V9L7 12 5 10z" />
+        <path d="M5 21h14" opacity=".55" />
+      `),
+      hunter: svgIcon(`
+        <path d="M5 19c5-7 9-9 14-14" />
+        <path d="M15 5h4v4" />
+        <path d="M6 18l2 2" opacity=".7"/>
+        <path d="M9 15l2 2" opacity=".7"/>
+      `),
+      mage: svgIcon(`
+        <path d="M12 3l2.2 5.2L20 10l-5.8 1.8L12 17l-2.2-5.2L4 10l5.8-1.8z" />
+        <path d="M6 21h12" opacity=".55"/>
+      `),
+      priest: svgIcon(`
+        <path d="M12 4v16" />
+        <path d="M7 9h10" />
+        <path d="M8.5 20c1.1-1.7 2.4-2.6 3.5-2.6s2.4.9 3.5 2.6" opacity=".7"/>
+      `),
+      druid: svgIcon(`
+        <path d="M12 3c-2 2-3 4-3 6a6 6 0 0012 0c0-2-1-4-3-6-1 3-3 4-3 4s-2-1-3-4z" />
+        <path d="M12 13v8" opacity=".7"/>
+      `),
+    };
+
+    // ---------- GEAR ICONS ----------
+    const GEAR_ORDER = ["empty","sword","shield","helm","ring"];
+    const GEAR_ICONS = {
+      empty: "",
+      sword: svgIcon(`
+        <path d="M20 4l-7 7" />
+        <path d="M13 11l-2 2" />
+        <path d="M11 13l-7 7" />
+        <path d="M7 19l-2 1 1-2" />
+        <path d="M14 10l2 2" opacity=".7"/>
+      `, {viewBox:"0 0 24 24", strokeWidth:2.2}),
+      shield: svgIcon(`
+        <path d="M12 3l8 4v6c0 5-4 8-8 8s-8-3-8-8V7z" />
+        <path d="M12 6v13" opacity=".6"/>
+      `),
+      helm: svgIcon(`
+        <path d="M6 12a6 6 0 0112 0v7H6z" />
+        <path d="M9 12v2" />
+        <path d="M15 12v2" />
+        <path d="M6 15h12" opacity=".6"/>
+      `),
+      ring: svgIcon(`
+        <path d="M12 7a5 5 0 100 10 5 5 0 000-10z" />
+        <path d="M12 4v3" />
+      `),
+    };
+
+    // ---------- DOM REFS ----------
+    const rowsEl = document.getElementById("rows");
+    const buildGridEl = document.getElementById("buildGrid");
+    const totalLevelsEl = document.getElementById("totalLevels");
+    const resetBtn = document.getElementById("resetBtn");
+    const toastEl = document.getElementById("toast");
+    const highestClimbedEl = document.getElementById("highestClimbed");
+    const goldValEl = document.getElementById("goldVal");
+    const woodValEl = document.getElementById("woodVal");
+
+    const climbBarEl = document.getElementById("climbBar");
+    const lootBarEl = document.getElementById("lootBar");
+    const gatherBarEl = document.getElementById("gatherBar");
+
+    const climbTimerTextEl = document.getElementById("climbTimerText");
+    const lootTimerTextEl = document.getElementById("lootTimerText");
+    const gatherTimerTextEl = document.getElementById("gatherTimerText");
+    const climbTimerSecEl = document.getElementById("climbTimerSec");
+    const lootTimerSecEl = document.getElementById("lootTimerSec");
+    const gatherTimerSecEl = document.getElementById("gatherTimerSec");
+
+    const tabTownBtn = document.getElementById("tabTownBtn");
+    const tabTalentsBtn = document.getElementById("tabTalentsBtn");
+    const tabTown = document.getElementById("tabTown");
+    const tabTalents = document.getElementById("tabTalents");
+    const tabHint = document.getElementById("tabHint");
+
+    // ---------- UTIL ----------
+    function showToast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toastEl.classList.remove("show"), 1700);
+    }
+    function clampInt(n, min, max){
+      n = Math.round(Number(n) || 0);
+      if(n < min) n = min;
+      if(n > max) n = max;
+      return n;
+    }
+
+    // ---------- PARTY UI ----------
+    const CLASSES = Object.keys(CLASS_ICONS);
+    function randClass(){ return CLASSES[Math.floor(Math.random() * CLASSES.length)]; }
+
+    function radioOpt(rowIndex, label){
+      const value = label.toLowerCase();
+      const name = `row-${rowIndex}-action`;
+      const id = `${name}-${value}`;
+      const checked = value === "loot" ? "checked" : "";
+      return `
+        <label class="radioOpt" for="${id}">
+          <input id="${id}" type="radio" name="${name}" value="${value}" ${checked}/>
+          <span>${label}</span>
+        </label>
+      `;
+    }
+
+    function makeRow(index){
+      const big = [randClass(), randClass(), randClass()];
+      const row = document.createElement("div");
+      row.className = "rowCard";
+      row.dataset.row = String(index);
+
+      row.innerHTML = `
+        <div class="rowLeft">
+          <div class="rowTitle">
+            <div class="name">Row ${index + 1}</div>
+            <div class="meta">3 classes • 4 gear slots</div>
+          </div>
+
+          <div class="bigIcons">
+            ${big.map(cls => `
+              <div class="iconTile" data-class="${cls}">
+                ${CLASS_ICONS[cls]}
+                <div class="iconLabel">${cls}</div>
+              </div>
+            `).join("")}
+          </div>
+
+          <div class="gearRow">
+            ${Array.from({length:4}).map((_,i)=>`
+              <div class="gearSlot" role="button" tabindex="0"
+                   aria-label="Gear slot ${i+1} (click to change)"
+                   data-gear="empty">${GEAR_ICONS.empty}</div>
+            `).join("")}
+            <div class="gearLegend">Click slots to add gear</div>
+          </div>
+        </div>
+
+        <div class="rowRight">
+          <div class="taskViz" aria-label="Current activity for row ${index+1}">
+            <div class="taskIcon" aria-hidden="true"></div>
+            <div class="taskText">
+              <div class="top">Status</div>
+              <div class="main">—</div>
+            </div>
+          </div>
+
+          <div class="radioGroup" aria-label="Action selection for row ${index+1}">
+            ${radioOpt(index, "Climb")}
+            ${radioOpt(index, "Loot")}
+            ${radioOpt(index, "Gather")}
+          </div>
+        </div>
+      `;
+
+      row.querySelectorAll(".gearSlot").forEach(slot => {
+        const advance = () => {
+          const cur = slot.dataset.gear || "empty";
+          const next = GEAR_ORDER[(GEAR_ORDER.indexOf(cur) + 1) % GEAR_ORDER.length];
+          slot.dataset.gear = next;
+          slot.innerHTML = GEAR_ICONS[next] || "";
+        };
+        slot.addEventListener("click", advance);
+        slot.addEventListener("keydown", (e) => {
+          if(e.key === "Enter" || e.key === " "){
+            e.preventDefault();
+            advance();
+          }
+        });
+      });
+
+      row.querySelectorAll('input[type="radio"]').forEach(r => {
+        r.addEventListener("change", () => {
+          enforceSingleClimb();
+          updateDerivedTimersAndGainsUI();
+          updateRowBadges();
+        });
+      });
+
+      return row;
+    }
+
+    for(let i=0;i<5;i++) rowsEl.appendChild(makeRow(i));
+
+    function getSelectedClimbRow(){
+      const climb = rowsEl.querySelector('input[type="radio"][value="climb"]:checked');
+      if(!climb) return null;
+      const rowCard = climb.closest(".rowCard");
+      return rowCard ? rowCard.dataset.row : null;
+    }
+
+    function enforceSingleClimb(){
+      const climbRow = getSelectedClimbRow();
+      rowsEl.querySelectorAll('.rowCard').forEach(card => {
+        const isThis = card.dataset.row === climbRow;
+        const climbInput = card.querySelector('input[type="radio"][value="climb"]');
+        if(!climbInput) return;
+        climbInput.disabled = (climbRow !== null) && !isThis;
+      });
+      updateRowBadges();
+    }
+
+    function getRowActions(){
+      const actions = [];
+      rowsEl.querySelectorAll(".rowCard").forEach(card => {
+        const rowId = card.dataset.row;
+        const checked = card.querySelector('input[type="radio"]:checked');
+        actions.push({ rowId, action: checked ? checked.value : "loot" });
+      });
+      return actions;
+    }
+
+    // ---------- BUILDINGS ----------
+    const BUILDING_ICONS = {
+      "Guild Hall": svgIcon(`
+        <path d="M4 20V10l8-6 8 6v10" />
+        <path d="M9 20v-6h6v6" />
+        <path d="M8 10h8" opacity=".7"/>
+        <path d="M12 7v3" opacity=".7"/>
+        <path d="M6 20h12" opacity=".55"/>
+      `),
+      "Smithy": svgIcon(`
+        <path d="M4 20V9l4-3 4 3 4-3 4 3v11" />
+        <path d="M7 20v-6h10v6" opacity=".75"/>
+        <path d="M16 3l2 2-8 8-2-2z" />
+        <path d="M8 11l-1 1" opacity=".7"/>
+      `),
+      "Druid Circle": svgIcon(`
+        <path d="M12 3c-2 2-3 4-3 6a6 6 0 0012 0c0-2-1-4-3-6-1 3-3 4-3 4s-2-1-3-4z" />
+        <path d="M6 20c1.2-2.5 3.7-4 6-4s4.8 1.5 6 4" opacity=".75"/>
+        <path d="M5 20h14" opacity=".55"/>
+      `),
+      "Tavern": svgIcon(`
+        <path d="M5 20V9l7-5 7 5v11" />
+        <path d="M9 20v-5h6v5" opacity=".75"/>
+        <path d="M8 9h8" opacity=".7"/>
+        <path d="M16 11h2a2 2 0 010 4h-2" />
+        <path d="M7 11h9v4H7z" opacity=".5"/>
+      `),
+      "Alchemist": svgIcon(`
+        <path d="M10 2h4" />
+        <path d="M12 2v6l5 8a4 4 0 01-3.4 6H10.4A4 4 0 017 16l5-8" />
+        <path d="M9 14h6" opacity=".6"/>
+        <path d="M10 18h4" opacity=".6"/>
+      `),
+      "Armor Crafter": svgIcon(`
+        <path d="M9 4l3-1 3 1 2 4-2 2v10H9V10L7 8z" />
+        <path d="M9 11h6" opacity=".65"/>
+        <path d="M10 20v-6" opacity=".6"/>
+        <path d="M14 20v-6" opacity=".6"/>
+      `),
+      "Mage Guild": svgIcon(`
+        <path d="M12 3l2.2 5.2L20 10l-5.8 1.8L12 17l-2.2-5.2L4 10l5.8-1.8z" />
+        <path d="M6 21h12" opacity=".55"/>
+        <path d="M9 19c1-1 2-1.5 3-1.5S14 18 15 19" opacity=".7"/>
+      `),
+    };
+
+    const BUILDINGS = [
+      { key:"guildHall",    name:"Guild Hall",    desc:"Boost loot/gather gains (town management)." },
+      { key:"smithy",       name:"Smithy",       desc:"Speeds up climbing (tools & gear)." },
+      { key:"druidCircle",  name:"Druid Circle", desc:"Speeds up gathering timer (nature rites)." },
+      { key:"tavern",       name:"Tavern",       desc:"Boost loot/gather gains (morale & rumors)." },
+      { key:"alchemist",    name:"Alchemist",    desc:"Speeds up climbing (potions & stamina)." },
+      { key:"armorCrafter", name:"Armor Crafter",desc:"Speeds up climbing (protection & prep)." },
+      { key:"mageGuild",    name:"Mage Guild",   desc:"Speeds up looting timer (arcane scouting)." },
+    ];
+
+    const MAX_LEVEL = 12;
+
+    const COST_MODELS = {
+      guildHall:    { goldBase:120, goldPow:1.35, goldMul:22,  woodBase:80,  woodPow:1.25, woodMul:18 },
+      smithy:       { goldBase:90,  goldPow:1.28, goldMul:18,  woodBase:110, woodPow:1.32, woodMul:22 },
+      druidCircle:  { goldBase:70,  goldPow:1.22, goldMul:14,  woodBase:140, woodPow:1.40, woodMul:26 },
+      tavern:       { goldBase:140, goldPow:1.30, goldMul:24,  woodBase:60,  woodPow:1.18, woodMul:12 },
+      alchemist:    { goldBase:160, goldPow:1.42, goldMul:28,  woodBase:50,  woodPow:1.20, woodMul:10 },
+      armorCrafter: { goldBase:110, goldPow:1.34, goldMul:20,  woodBase:95,  woodPow:1.28, woodMul:18 },
+      mageGuild:    { goldBase:180, goldPow:1.46, goldMul:30,  woodBase:70,  woodPow:1.24, woodMul:14 },
+    };
+
+    function nextUpgradeCost(buildingKey, currentLevel){
+      const m = COST_MODELS[buildingKey];
+      const next = currentLevel + 1;
+      const gold = Math.round(m.goldBase + m.goldMul * Math.pow(next, m.goldPow));
+      const wood = Math.round(m.woodBase + m.woodMul * Math.pow(next, m.woodPow));
+      return { gold, wood };
+    }
+
+    // ---------- STATE ----------
+    const STORE_KEY = "party_town_tabs_v2_enemy";
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORE_KEY);
+        if(!raw) return null;
+        const obj = JSON.parse(raw);
+        if(typeof obj !== "object" || !obj) return null;
+        return obj;
+      }catch{
+        return null;
+      }
+    }
+    function saveState(){
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
+    function defaultState(){
+      const levels = {};
+      for(const b of BUILDINGS) levels[b.key] = 1;
+      return {
+        buildings: levels,
+        highestClimbed: 1,
+        resources: { gold: 0, wood: 0 },
+        timers: { climbElapsed: 0, lootElapsed: 0, gatherElapsed: 0 },
+        lastFrameMs: Date.now(),
+        activeRightTab: "town",
+        currentEnemy: randEnemyKey()
+      };
+    }
+
+    let state = loadState() || defaultState();
+
+    if(!state.buildings) state.buildings = defaultState().buildings;
+    if(!state.resources) state.resources = { gold:0, wood:0 };
+    if(!state.timers) state.timers = { climbElapsed:0, lootElapsed:0, gatherElapsed:0 };
+    if(state.activeRightTab !== "town" && state.activeRightTab !== "talents") state.activeRightTab = "town";
+    if(!state.currentEnemy || !ENEMIES[state.currentEnemy]) state.currentEnemy = randEnemyKey();
+
+    for(const b of BUILDINGS){
+      if(typeof state.buildings[b.key] !== "number") state.buildings[b.key] = 1;
+      state.buildings[b.key] = clampInt(state.buildings[b.key], 1, MAX_LEVEL);
+    }
+    state.highestClimbed = clampInt(state.highestClimbed, 1, 999999999);
+    state.resources.gold = clampInt(state.resources.gold, 0, 999999999);
+    state.resources.wood = clampInt(state.resources.wood, 0, 999999999);
+    state.timers.climbElapsed = clampInt(state.timers.climbElapsed, 0, 10_000_000);
+    state.timers.lootElapsed = clampInt(state.timers.lootElapsed, 0, 10_000_000);
+    state.timers.gatherElapsed = clampInt(state.timers.gatherElapsed, 0, 10_000_000);
+    state.lastFrameMs = Number(state.lastFrameMs || Date.now());
+
+    saveState();
+
+    // ---------- ROW BADGES (enemy / gold / wood) ----------
+    function setNewEnemy(){
+      state.currentEnemy = randEnemyKey();
+      saveState();
+      updateRowBadges();
+    }
+
+    function updateRowBadges(){
+      const climbRow = getSelectedClimbRow();
+      rowsEl.querySelectorAll(".rowCard").forEach(card => {
+        const rowId = card.dataset.row;
+        const checked = card.querySelector('input[type="radio"]:checked');
+        const action = checked ? checked.value : "loot";
+
+        const iconEl = card.querySelector(".taskIcon");
+        const topEl  = card.querySelector(".taskText .top");
+        const mainEl = card.querySelector(".taskText .main");
+
+        if(!iconEl || !topEl || !mainEl) return;
+
+        if(action === "climb" && climbRow !== null && rowId === climbRow){
+          const e = ENEMIES[state.currentEnemy] || ENEMIES[randEnemyKey()];
+          iconEl.innerHTML = e.icon;
+          topEl.textContent = "Fighting";
+          mainEl.textContent = e.name;
+        } else if(action === "loot"){
+          iconEl.innerHTML = ICONS.gold;
+          topEl.textContent = "Looting";
+          mainEl.textContent = "Searching for gold";
+        } else if(action === "gather"){
+          iconEl.innerHTML = ICONS.wood;
+          topEl.textContent = "Gathering";
+          mainEl.textContent = "Collecting wood";
+        } else {
+          iconEl.innerHTML = ICONS.mountain;
+          topEl.textContent = "Idle";
+          mainEl.textContent = "—";
+        }
+      });
+    }
+
+    // ---------- DERIVED EFFECTS ----------
+    const BASE = { climbSec: 60, lootSec: 15, gatherSec: 15 };
+
+    function derivedEffects(){
+      const lv = (k) => clampInt(state.buildings[k], 1, MAX_LEVEL);
+
+      const climbSpeedLv = (lv("smithy") - 1) + (lv("alchemist") - 1) + (lv("armorCrafter") - 1);
+      const climbSec = Math.max(5, BASE.climbSec - climbSpeedLv);
+
+      const gatherSpeedLv = (lv("druidCircle") - 1);
+      const gatherSec = Math.max(5, BASE.gatherSec - gatherSpeedLv);
+
+      const lootSpeedLv = (lv("mageGuild") - 1);
+      const lootSec = Math.max(5, BASE.lootSec - lootSpeedLv);
+
+      const tavernMult = 1 + 0.05 * (lv("tavern") - 1);
+      const guildMult  = 1 + 0.05 * (lv("guildHall") - 1);
+      const gainMult = tavernMult * guildMult;
+
+      return { climbSec, lootSec, gatherSec, gainMult };
+    }
+
+    function updateDerivedTimersAndGainsUI(){
+      const eff = derivedEffects();
+      climbTimerTextEl.textContent = `Climb every ${eff.climbSec}s`;
+      lootTimerTextEl.textContent = `Loot every ${eff.lootSec}s`;
+      gatherTimerTextEl.textContent = `Gather every ${eff.gatherSec}s`;
+      climbTimerSecEl.textContent = String(eff.climbSec);
+      lootTimerSecEl.textContent = String(eff.lootSec);
+      gatherTimerSecEl.textContent = String(eff.gatherSec);
+    }
+
+    // ---------- RIGHT TABS ----------
+    function setActiveTab(tabName){
+      const isTown = tabName === "town";
+
+      tabTownBtn.classList.toggle("active", isTown);
+      tabTalentsBtn.classList.toggle("active", !isTown);
+
+      tabTownBtn.setAttribute("aria-selected", String(isTown));
+      tabTalentsBtn.setAttribute("aria-selected", String(!isTown));
+
+      tabTownBtn.tabIndex = isTown ? 0 : -1;
+      tabTalentsBtn.tabIndex = !isTown ? 0 : -1;
+
+      tabTown.hidden = !isTown;
+      tabTalents.hidden = isTown;
+
+      tabHint.textContent = isTown
+        ? "Town: upgrade buildings • timers & gains affected by levels"
+        : "Talents: static skill tree (visual only)";
+
+      state.activeRightTab = tabName;
+      saveState();
+    }
+
+    tabTownBtn.addEventListener("click", () => setActiveTab("town"));
+    tabTalentsBtn.addEventListener("click", () => setActiveTab("talents"));
+    [tabTownBtn, tabTalentsBtn].forEach(btn => {
+      btn.addEventListener("keydown", (e) => {
+        if(e.key === "ArrowRight" || e.key === "ArrowLeft"){
+          e.preventDefault();
+          const next = (btn === tabTownBtn) ? "talents" : "town";
+          setActiveTab(next);
+          (btn === tabTownBtn ? tabTalentsBtn : tabTownBtn).focus();
+        }
+      });
+    });
+
+    // ---------- ECONOMY ----------
+    function updateResourceUI(){
+      highestClimbedEl.textContent = String(state.highestClimbed);
+      goldValEl.textContent = String(state.resources.gold);
+      woodValEl.textContent = String(state.resources.wood);
+    }
+
+    function canAfford(cost){
+      return state.resources.gold >= cost.gold && state.resources.wood >= cost.wood;
+    }
+    function spend(cost){
+      state.resources.gold -= cost.gold;
+      state.resources.wood -= cost.wood;
+      if(state.resources.gold < 0) state.resources.gold = 0;
+      if(state.resources.wood < 0) state.resources.wood = 0;
+    }
+
+    function payoutLoot(){
+      const eff = derivedEffects();
+      const actions = getRowActions();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+
+      let groupsLooting = 0;
+      for(const r of actions) if(r.action === "loot") groupsLooting++;
+      if(groupsLooting <= 0) return 0;
+
+      const basePerGroup = lvlFactor * 10;
+      const totalGold = Math.round(basePerGroup * groupsLooting * eff.gainMult);
+      state.resources.gold = clampInt(state.resources.gold + totalGold, 0, 999999999);
+      return totalGold;
+    }
+
+    function payoutGather(){
+      const eff = derivedEffects();
+      const actions = getRowActions();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+
+      let groupsGathering = 0;
+      for(const r of actions) if(r.action === "gather") groupsGathering++;
+      if(groupsGathering <= 0) return 0;
+
+      const basePerGroup = lvlFactor * 5;
+      const totalWood = Math.round(basePerGroup * groupsGathering * eff.gainMult);
+      state.resources.wood = clampInt(state.resources.wood + totalWood, 0, 999999999);
+      return totalWood;
+    }
+
+    function doClimb(){
+      const climbRow = getSelectedClimbRow();
+      if(climbRow === null) return false;
+      state.highestClimbed = clampInt(state.highestClimbed + 1, 1, 999999999);
+      return true;
+    }
+
+    // ---------- BUILDINGS RENDER ----------
+    function levelProgressPercent(lv){
+      return Math.round(((lv - 1) / (MAX_LEVEL - 1)) * 100);
+    }
+
+    function renderBuildings(){
+      buildGridEl.innerHTML = "";
+
+      let total = 0;
+      for(const b of BUILDINGS){
+        const lv = clampInt(state.buildings[b.key], 1, MAX_LEVEL);
+        total += lv;
+
+        const pct = levelProgressPercent(lv);
+        const isMax = lv >= MAX_LEVEL;
+        const cost = isMax ? null : nextUpgradeCost(b.key, lv);
+        const affordable = cost ? canAfford(cost) : true;
+
+        const card = document.createElement("div");
+        card.className = "building" + ((!affordable && !isMax) ? " locked" : "");
+        card.dataset.key = b.key;
+        card.setAttribute("role","button");
+        card.setAttribute("tabindex","0");
+
+        const costHtml = isMax ? `
+          <div class="costLine">
+            <span>Max level reached</span>
+            <span class="cta">Max</span>
+          </div>
+        ` : `
+          <div class="costLine">
+            <div class="costPair">
+              <span class="costItem gold">${ICONS.gold}${cost.gold}<span class="sub">g</span></span>
+              <span class="costItem wood">${ICONS.wood}${cost.wood}<span class="sub">w</span></span>
+            </div>
+            <span class="cta">${affordable ? "Click to upgrade" : "Not enough"}</span>
+          </div>
+        `;
+
+        card.innerHTML = `
+          <div class="bTop">
+            <div class="bIcon" aria-hidden="true">${BUILDING_ICONS[b.name] || ""}</div>
+            <div class="bTitle">
+              <p class="bName">${b.name}</p>
+              <p class="bSub">${b.desc}</p>
+            </div>
+            <div class="bLevel">Lvl ${lv}</div>
+          </div>
+
+          <div class="bBody">
+            <div class="barWrap">
+              <div class="barLabel"><span>Progress</span><span>${pct}%</span></div>
+              <div class="bar"><div class="barFill" style="width:${pct}%"></div></div>
+            </div>
+            ${costHtml}
+          </div>
+        `;
+
+        const doUpgrade = () => {
+          const cur = clampInt(state.buildings[b.key], 1, MAX_LEVEL);
+          if(cur >= MAX_LEVEL){ showToast(`${b.name} is max (${MAX_LEVEL}).`); return; }
+          const c = nextUpgradeCost(b.key, cur);
+          if(!canAfford(c)){ showToast(`Need ${c.gold}g and ${c.wood}w for ${b.name}.`); return; }
+
+          spend(c);
+          state.buildings[b.key] = cur + 1;
+
+          const eff = derivedEffects();
+          state.timers.climbElapsed = Math.min(state.timers.climbElapsed, eff.climbSec * 1000 - 1);
+          state.timers.lootElapsed = Math.min(state.timers.lootElapsed, eff.lootSec * 1000 - 1);
+          state.timers.gatherElapsed = Math.min(state.timers.gatherElapsed, eff.gatherSec * 1000 - 1);
+
+          saveState();
+          updateResourceUI();
+          updateDerivedTimersAndGainsUI();
+          renderBuildings();
+          showToast(`${b.name} upgraded to Lvl ${state.buildings[b.key]}! (-${c.gold}g, -${c.wood}w)`);
+        };
+
+        card.addEventListener("click", doUpgrade);
+        card.addEventListener("keydown", (e) => {
+          if(e.key === "Enter" || e.key === " "){
+            e.preventDefault();
+            doUpgrade();
+          }
+        });
+
+        buildGridEl.appendChild(card);
+      }
+
+      totalLevelsEl.textContent = String(total);
+    }
+
+    // ---------- TIMER LOOP ----------
+    function setBar(barEl, elapsedMs, periodSec){
+      const periodMs = periodSec * 1000;
+      const pct = periodMs <= 0 ? 0 : Math.min(100, (elapsedMs / periodMs) * 100);
+      barEl.style.width = pct + "%";
+    }
+
+    function tickFrame(nowMs){
+      const eff = derivedEffects();
+
+      const last = Number(state.lastFrameMs || nowMs);
+      let dt = nowMs - last;
+      if(dt < 0) dt = 0;
+      if(dt > 2000) dt = 2000;
+      state.lastFrameMs = nowMs;
+
+      state.timers.climbElapsed += dt;
+      state.timers.lootElapsed += dt;
+      state.timers.gatherElapsed += dt;
+
+      const climbMs = eff.climbSec * 1000;
+      const lootMs = eff.lootSec * 1000;
+      const gatherMs = eff.gatherSec * 1000;
+
+      if(climbMs > 0){
+        while(state.timers.climbElapsed >= climbMs){
+          state.timers.climbElapsed -= climbMs;
+          if(doClimb()){
+            // New climb cycle begins -> new enemy
+            setNewEnemy();
+            updateResourceUI();
+            const e = ENEMIES[state.currentEnemy];
+            showToast(`Climbed! Highest climbed is now ${state.highestClimbed}. Next foe: ${e ? e.name : "???"}.`);
+          }
+        }
+      }
+
+      if(lootMs > 0){
+        let lootTotal = 0, events = 0;
+        while(state.timers.lootElapsed >= lootMs){
+          state.timers.lootElapsed -= lootMs;
+          const g = payoutLoot();
+          if(g > 0){ lootTotal += g; events++; }
+        }
+        if(events > 0){
+          updateResourceUI();
+          showToast(`Loot payout: +${lootTotal}g.`);
+        }
+      }
+
+      if(gatherMs > 0){
+        let gatherTotal = 0, events = 0;
+        while(state.timers.gatherElapsed >= gatherMs){
+          state.timers.gatherElapsed -= gatherMs;
+          const w = payoutGather();
+          if(w > 0){ gatherTotal += w; events++; }
+        }
+        if(events > 0){
+          updateResourceUI();
+          showToast(`Gather payout: +${gatherTotal}w.`);
+        }
+      }
+
+      setBar(climbBarEl, state.timers.climbElapsed, eff.climbSec);
+      setBar(lootBarEl, state.timers.lootElapsed, eff.lootSec);
+      setBar(gatherBarEl, state.timers.gatherElapsed, eff.gatherSec);
+
+      tickFrame._saveAccum = (tickFrame._saveAccum || 0) + dt;
+      if(tickFrame._saveAccum >= 1000){
+        tickFrame._saveAccum = 0;
+        saveState();
+        renderBuildings();
+      }
+
+      requestAnimationFrame(tickFrame);
+    }
+
+    // ---------- TALENTS (STATIC TREE) ----------
+    function talentIcon(kind){
+      const m = {
+        sword: `<path d="M18 6l-7 7" /><path d="M11 13l-5 5" /><path d="M8 18l-2 1 1-2" /><path d="M13 5l2 2" opacity=".65"/>`,
+        leaf: `<path d="M7 17c6-1 10-5 10-11-6 0-10 4-11 10" /><path d="M6 18c2-2 6-6 11-11" opacity=".6"/>`,
+        star: `<path d="M12 3l2.2 5.2L20 10l-5.8 1.8L12 17l-2.2-5.2L4 10l5.8-1.8z"/>`,
+        shield:`<path d="M12 3l8 4v6c0 5-4 8-8 8s-8-3-8-8V7z" /><path d="M12 6v13" opacity=".55"/>`,
+        flask:`<path d="M10 2h4"/><path d="M12 2v6l5 8a4 4 0 01-3.4 6H10.4A4 4 0 017 16l5-8"/><path d="M9 14h6" opacity=".55"/>`,
+        bolt:`<path d="M13 2L5 14h7l-1 8 8-12h-7z"/>`,
+        eye: `<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z"/><path d="M12 10a2 2 0 100 4 2 2 0 000-4z" opacity=".65"/>`,
+      };
+      return m[kind] || m.star;
+    }
+
+    function renderTalentTree(){
+      const svg = document.getElementById("talentSvg");
+
+      const nodes = [
+        { id:"n1", x:140, y:90,  kind:"star" },
+        { id:"n2", x:500, y:90,  kind:"eye" },
+        { id:"n3", x:860, y:90,  kind:"bolt" },
+        { id:"n4", x:250, y:210, kind:"sword" },
+        { id:"n5", x:500, y:230, kind:"shield" },
+        { id:"n6", x:750, y:210, kind:"flask" },
+        { id:"n7", x:170, y:360, kind:"leaf" },
+        { id:"n8", x:500, y:360, kind:"star" },
+        { id:"n9", x:830, y:360, kind:"leaf" },
+        { id:"n10", x:320, y:500, kind:"shield" },
+        { id:"n11", x:680, y:500, kind:"sword" },
+      ];
+
+      const edges = [
+        ["n1","n4"], ["n2","n5"], ["n3","n6"],
+        ["n4","n7"], ["n4","n8"],
+        ["n5","n8"],
+        ["n6","n8"], ["n6","n9"],
+        ["n7","n10"], ["n8","n10"], ["n8","n11"], ["n9","n11"]
+      ];
+
+      const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
+
+      function edgePath(a, b){
+        const ax = a.x, ay = a.y;
+        const bx = b.x, by = b.y;
+        const midY = (ay + by) / 2;
+        return `M ${ax} ${ay} C ${ax} ${midY}, ${bx} ${midY}, ${bx} ${by}`;
+      }
+
+      const bg = `
+        <defs>
+          <radialGradient id="glow" cx="50%" cy="35%" r="70%">
+            <stop offset="0%" stop-color="rgba(124,196,255,0.30)"/>
+            <stop offset="55%" stop-color="rgba(124,196,255,0.08)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+          </radialGradient>
+
+          <linearGradient id="edgeGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="rgba(124,196,255,0.55)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0.10)"/>
+          </linearGradient>
+
+          <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="rgba(0,0,0,.55)"/>
+          </filter>
+        </defs>
+
+        <rect x="0" y="0" width="1000" height="600" fill="rgba(0,0,0,0)"/>
+        <circle cx="320" cy="120" r="220" fill="url(#glow)" opacity="0.7"/>
+        <circle cx="760" cy="210" r="260" fill="url(#glow)" opacity="0.55"/>
+      `;
+
+      const edgeSvg = edges.map(([from,to]) => {
+        const a = nodeById[from], b = nodeById[to];
+        return `<path d="${edgePath(a,b)}" fill="none" stroke="url(#edgeGrad)" stroke-width="4" opacity="0.55"/>`;
+      }).join("");
+
+      const nodeSvg = nodes.map(n => {
+        const r = 42;
+        const icon = `
+          <g transform="translate(${n.x-14},${n.y-14})" opacity="0.95">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              ${talentIcon(n.kind)}
+            </svg>
+          </g>
+        `;
+        return `
+          <g filter="url(#softShadow)">
+            <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="rgba(0,0,0,.28)" stroke="rgba(255,255,255,.16)" stroke-width="2"/>
+            <circle cx="${n.x}" cy="${n.y}" r="${r-10}" fill="rgba(124,196,255,.08)" stroke="rgba(124,196,255,.22)" stroke-width="2"/>
+            ${icon}
+          </g>
+        `;
+      }).join("");
+
+      svg.innerHTML = bg + edgeSvg + nodeSvg;
+    }
+
+    // ---------- RESET ----------
+    resetBtn.addEventListener("click", () => {
+      state = defaultState();
+      saveState();
+      updateResourceUI();
+      updateDerivedTimersAndGainsUI();
+      renderBuildings();
+      renderTalentTree();
+      setActiveTab(state.activeRightTab);
+      enforceSingleClimb();
+      updateRowBadges();
+      showToast("Reset done: everything set back to defaults.");
+    });
+
+    // ---------- INIT ----------
+    updateResourceUI();
+    updateDerivedTimersAndGainsUI();
+    renderBuildings();
+    renderTalentTree();
+    setActiveTab(state.activeRightTab);
+    enforceSingleClimb();
+    updateRowBadges();
+    requestAnimationFrame(tickFrame);
+  </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Party + Town/Talents Tabs (External Pixel Icons + Grouped Buildings)</title>
+  <title>Party + Town/Talents Tabs (Drag Characters + Class Bonuses + Rates)</title>
   <style>
     :root{
       --bg:#0b0f14;
@@ -81,11 +81,16 @@
       text-align:right;
     }
 
-    .timers{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:10px;
-    }
+	.timers{
+	  display:grid;
+	  grid-template-columns: repeat(3, 1fr);
+	  gap:8px;
+	}
+	.timerTop{
+	  flex-direction:column;
+	  align-items:flex-start;
+	  gap:2px;
+	}
     .timerCard{
       border:1px solid rgba(255,255,255,.10);
       background: rgba(0,0,0,.18);
@@ -95,14 +100,7 @@
       flex-direction:column;
       gap:8px;
     }
-    .timerTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      font-size:12px;
-      color:var(--muted);
-    }
+
     .timerTop b{ color:var(--text); font-weight:900; }
     .bar{
       height:10px;
@@ -111,6 +109,24 @@
       background: rgba(0,0,0,.22);
       overflow:hidden;
     }
+	/* --- Make timer text smaller (for compact / 3-up timers) --- */
+.timerTop{
+  font-size:10px;     /* was 12px */
+  line-height:1.15;
+}
+
+.timerTop b{
+  font-size:10px;     /* keep bold same size */
+  font-weight:900;
+}
+
+.timerCard{
+  padding:7px 8px;    /* slightly tighter */
+}
+
+.bar{
+  height:7px;         /* slimmer bar */
+}
     .barFill{
       height:100%;
       width:0%;
@@ -172,6 +188,8 @@
       grid-template-columns: repeat(3, 1fr);
       gap:10px;
     }
+
+    /* Draggable character tile */
     .iconTile{
       border:1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.03);
@@ -183,43 +201,31 @@
       justify-content:center;
       gap:6px;
       min-height:86px;
+      user-select:none;
+      cursor: grab;
+      transition: transform .08s ease, border-color .12s ease, background .12s ease, opacity .08s ease;
     }
+    .iconTile:hover{
+      transform: translateY(-1px);
+      border-color: rgba(124,196,255,.35);
+      background: rgba(124,196,255,.05);
+    }
+    .iconTile:active{ cursor: grabbing; }
+    .iconTile.dragging{
+      opacity:.55;
+      transform: scale(.98);
+      border-color: rgba(124,196,255,.55);
+    }
+    .iconTile.dropTarget{
+      outline: 2px dashed rgba(124,196,255,.55);
+      outline-offset: 4px;
+    }
+
     .iconLabel{
       font-size:11px;
       color:var(--muted);
       text-transform:uppercase;
       letter-spacing:.6px;
-    }
-
-    .gearRow{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-    .gearSlot{
-      width:34px;
-      height:34px;
-      border-radius:10px;
-      border:1px dashed rgba(255,255,255,.18);
-      background: rgba(0,0,0,.12);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      transition: transform .08s ease, border-color .12s ease, background .12s ease;
-      user-select:none;
-    }
-    .gearSlot:hover{
-      transform: translateY(-1px);
-      border-color: rgba(255,255,255,.28);
-      background: rgba(255,255,255,.04);
-    }
-    .gearLegend{
-      margin-left:auto;
-      font-size:11px;
-      color:var(--muted);
-      white-space:nowrap;
     }
 
     /* Row right: enemy/task viz above radios */
@@ -665,51 +671,91 @@
     .toast.show{ opacity:1; transform: translateY(0); }
 
     /* External icon images */
-   /* External icon images */
-.pixelImg{
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  object-fit: contain;
-  display:block;
-}
+    .pixelImg{
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      object-fit: contain;
+      display:block;
+    }
 
-/* Context sizes */
-.iconTile .pixelImg{
-  width:46px;
-  height:46px;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
-}
+    /* Context sizes */
+    .iconTile .pixelImg{
+      width:46px;
+      height:46px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+      pointer-events:none; /* let drag start anywhere */
+    }
 
-.gearSlot .pixelImg{
-  width:20px;
-  height:20px;
-  filter: none;
-}
+    .pillIcon .pixelImg{
+      width:16px;
+      height:16px;
+      filter: none;
+    }
 
-.pillIcon .pixelImg{
-  width:16px;
-  height:16px;
-  filter: none;
-}
+    .bIcon .pixelImg{
+      width:36px;
+      height:36px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    }
 
-.bIcon .pixelImg{
-  width:36px;
-  height:36px;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
-}
+    .taskIcon .pixelImg{
+      width:30px;
+      height:30px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    }
 
-.taskIcon .pixelImg{
-  width:30px;
-  height:30px;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
-}
+    .costItem .pixelImg{
+      width:16px;
+      height:16px;
+      filter: none;
+    }
 
-/* IMPORTANT: cost pill icons (gold/wood next to numbers) */
-.costItem .pixelImg{
-  width:16px;
-  height:16px;
-  filter: none;
-}
+    /* Small inline icons for text + legend */
+    .inlineIcon{
+      width:14px;
+      height:14px;
+      display:inline-block;
+      vertical-align:-2px;
+      filter:none;
+    }
+
+    /* Matchup legend */
+    .matchupLegend{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+
+    .matchupPill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      color: var(--muted);
+      font-size:11px;
+      user-select:none;
+    }
+
+    .matchupPill .vs{
+      opacity:.55;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+
+    .matchupPill.active{
+      color: var(--text);
+      border-color: rgba(124,196,255,.45);
+      background: rgba(124,196,255,.08);
+      box-shadow: 0 0 0 2px rgba(124,196,255,.10) inset;
+    }
+
+    .matchupPill.active .pixelImg{
+      filter: drop-shadow(0 6px 10px rgba(124,196,255,.22));
+    }
 
     @media (max-width: 1100px){
       .buildGrid{ grid-template-columns: repeat(2, minmax(220px, 1fr)); }
@@ -723,6 +769,51 @@
       .statusPills{ justify-content:flex-start; }
       .rightHeader{ position: sticky; top: 0; }
     }
+	
+	/* === COMPACT MODE === */
+.leftTab{ padding:12px; gap:10px; }
+.tabHeader{ padding:10px; gap:8px; }
+.timerCard{ padding:8px; gap:6px; }
+.bar{ height:8px; }
+
+.rowCard{
+  padding:5px;
+  margin-bottom:5px;
+  gap:10px;
+  grid-template-columns: 1fr 140px; /* slightly slimmer right */
+}
+
+.rowLeft{ gap:8px; }
+.bigIcons{ gap:8px; }
+
+.iconTile{
+  min-height:64px;           /* was 86 */
+  padding:8px;               /* was 10 */
+  gap:4px;
+  border-radius:12px;
+}
+.iconTile .pixelImg{
+  width:34px;                /* was 46 */
+  height:34px;
+}
+.iconLabel{
+  font-size:10px;            /* was 11 */
+  letter-spacing:.4px;
+}
+
+/* Kill the big task box to reclaim height (huge win) */
+.taskViz{ display:none; }
+
+/* Radios in one line instead of vertical */
+.radioGroup{
+  margin-top:0;              /* remove "push to bottom" */
+  flex-direction:row;        /* was column */
+  flex-wrap:wrap;
+  gap:8px 10px;
+}
+.radioOpt{ font-size:11px; }
+.rowRight{ gap:8px; }
+
   </style>
 </head>
 <body>
@@ -734,14 +825,11 @@
           <div>
             <h1 style="margin-bottom:6px;">Party</h1>
             <div style="font-size:12px;color:var(--muted);line-height:1.25;">
-              <b>Climb</b> increases highest climbed level on its timer.<br/>
-              <b>Loot</b>/<b>Gather</b> pay out on their own timers.
+              <b>Resource bonuses:</b> Mage boosts wood, Priest boosts gold, Druid boosts both (smaller).
             </div>
+
+            <div id="matchupLegend" class="matchupLegend" aria-label="Enemy matchup legend"></div>
           </div>
-          <p class="hint">
-            Gear slots: click to cycle<br/>
-            Only one group can be <b>Climb</b>
-          </p>
         </div>
 
         <div class="timers" aria-label="Timers">
@@ -780,7 +868,7 @@
         <div>
           <h2>Dashboard</h2>
           <p>
-            Top resources stay visible. Use the tabs below to switch between <b>Town</b> and <b>Talents</b>.
+            Top resources stay visible. Tabs: <b>Town</b> and <b>Talents</b>.
           </p>
         </div>
 
@@ -790,12 +878,12 @@
             Highest climbed: <strong id="highestClimbed">1</strong>
           </div>
 
-          <div class="pill" title="Gold">
+          <div class="pill" title="Gold (shows next loot payout)">
             <span class="pillIcon" aria-hidden="true" id="goldIcon"></span>
             <strong id="goldVal">0</strong>
           </div>
 
-          <div class="pill" title="Wood">
+          <div class="pill" title="Wood (shows next gather payout)">
             <span class="pillIcon" aria-hidden="true" id="woodIcon"></span>
             <strong id="woodVal">0</strong>
           </div>
@@ -856,13 +944,6 @@
         spider: "icons/enemies/spider.png",
         orc:    "icons/enemies/orc.png",
       },
-      gear: {
-        empty: "",
-        sword:  "icons/gear/sword.png",
-        shield: "icons/gear/shield.png",
-        helm:   "icons/gear/helm.png",
-        ring:   "icons/gear/ring.png",
-      },
       buildings: {
         "Guild Hall": "icons/buildings/guild-hall.png",
         "Smithy": "icons/buildings/smithy.png",
@@ -876,12 +957,11 @@
 
     function imgTag(src, alt = ""){
       if(!src) return "";
-      // onerror hides broken icons to avoid ugly missing-image UI
       return `<img class="pixelImg" src="${src}" alt="${alt}" onerror="this.style.display='none'">`;
     }
 
     // ============================================================
-    // ENEMIES (names + keys; icons come from ICON_PATHS.enemies)
+    // ENEMIES
     // ============================================================
     const ENEMIES = {
       undead: { name: "Undead" },
@@ -923,7 +1003,6 @@
     const tabTalents = document.getElementById("tabTalents");
     const tabHint = document.getElementById("tabHint");
 
-    // top pill icons
     document.getElementById("goldIcon").innerHTML = imgTag(ICON_PATHS.resources.gold, "Gold");
     document.getElementById("woodIcon").innerHTML = imgTag(ICON_PATHS.resources.wood, "Wood");
     document.getElementById("mountainIcon").innerHTML = imgTag(ICON_PATHS.resources.mountain, "Mountain");
@@ -944,21 +1023,69 @@
       return n;
     }
 
+    function renderMatchupLegend(){
+      const el = document.getElementById("matchupLegend");
+      if(!el) return;
+
+      const matchups = [
+        { enemy:"undead", classKey:"priest", label:"Priest vs Undead" },
+        { enemy:"orc",    classKey:"warrior",label:"Warrior vs Orc" },
+        { enemy:"goblin", classKey:"hunter", label:"Hunter vs Goblin" },
+        { enemy:"spider", classKey:"druid",  label:"Druid vs Spider" },
+      ];
+
+      const curEnemy = state.currentEnemy;
+
+      const pills = matchups.map(m => {
+        const isActive = (m.enemy === curEnemy);
+        const clsIcon = ICON_PATHS.classes[m.classKey];
+        const enemyIcon = ICON_PATHS.enemies[m.enemy];
+
+        return `
+          <span class="matchupPill ${isActive ? "active" : ""}" title="${m.label} (−5s each)">
+            <img class="pixelImg inlineIcon" src="${clsIcon}" alt="${m.classKey}">
+            <span class="vs">vs</span>
+            <img class="pixelImg inlineIcon" src="${enemyIcon}" alt="${m.enemy}">
+            <span class="vs">−5s</span>
+          </span>
+        `;
+      }).join("");
+
+      const magePill = `
+        <span class="matchupPill active" title="Mage works vs any enemy (−5s each)">
+          <img class="pixelImg inlineIcon" src="${ICON_PATHS.classes.mage}" alt="mage">
+          <span class="vs">vs</span>
+          <img class="pixelImg inlineIcon" src="${ICON_PATHS.resources.mountain}" alt="any">
+          <span class="vs">ANY</span>
+          <span class="vs">−5s</span>
+        </span>
+      `;
+
+      el.innerHTML = pills + magePill;
+    }
+
     // ============================================================
-    // PARTY UI
+    // PARTY: CLASSES / ACTIONS / DRAG CHARACTERS
+    // (GEAR REMOVED)
     // ============================================================
     const CLASS_KEYS = Object.keys(ICON_PATHS.classes);
     function randClass(){
       return CLASS_KEYS[Math.floor(Math.random() * CLASS_KEYS.length)];
     }
 
-    const GEAR_ORDER = ["empty","sword","shield","helm","ring"];
+    function countClasses(arr){
+      const out = { warrior:0, hunter:0, mage:0, priest:0, druid:0 };
+      for(const c of (arr || [])){
+        if(out[c] !== undefined) out[c] += 1;
+      }
+      return out;
+    }
 
-    function radioOpt(rowIndex, label){
+    function radioOpt(rowIndex, label, current){
       const value = label.toLowerCase();
       const name = `row-${rowIndex}-action`;
       const id = `${name}-${value}`;
-      const checked = value === "loot" ? "checked" : "";
+      const checked = (current === value) ? "checked" : "";
       return `
         <label class="radioOpt" for="${id}">
           <input id="${id}" type="radio" name="${name}" value="${value}" ${checked}/>
@@ -967,120 +1094,9 @@
       `;
     }
 
-    function makeRow(index){
-      const big = [randClass(), randClass(), randClass()];
-      const row = document.createElement("div");
-      row.className = "rowCard";
-      row.dataset.row = String(index);
-
-      row.innerHTML = `
-        <div class="rowLeft">
-          <div class="rowTitle">
-            <div class="name">Row ${index + 1}</div>
-            <div class="meta">3 classes • 4 gear slots</div>
-          </div>
-
-          <div class="bigIcons">
-            ${big.map(cls => `
-              <div class="iconTile" data-class="${cls}">
-                ${imgTag(ICON_PATHS.classes[cls], cls)}
-                <div class="iconLabel">${cls}</div>
-              </div>
-            `).join("")}
-          </div>
-
-          <div class="gearRow">
-            ${Array.from({length:4}).map((_,i)=>`
-              <div class="gearSlot" role="button" tabindex="0"
-                   aria-label="Gear slot ${i+1} (click to change)"
-                   data-gear="empty">${imgTag(ICON_PATHS.gear.empty, "empty")}</div>
-            `).join("")}
-            <div class="gearLegend">Click slots to add gear</div>
-          </div>
-        </div>
-
-        <div class="rowRight">
-          <div class="taskViz" aria-label="Current activity for row ${index+1}">
-            <div class="taskIcon" aria-hidden="true"></div>
-            <div class="taskText">
-              <div class="top">Status</div>
-              <div class="main">—</div>
-            </div>
-          </div>
-
-          <div class="radioGroup" aria-label="Action selection for row ${index+1}">
-            ${radioOpt(index, "Climb")}
-            ${radioOpt(index, "Loot")}
-            ${radioOpt(index, "Gather")}
-          </div>
-        </div>
-      `;
-
-      row.querySelectorAll(".gearSlot").forEach(slot => {
-        const advance = () => {
-          const cur = slot.dataset.gear || "empty";
-          const next = GEAR_ORDER[(GEAR_ORDER.indexOf(cur) + 1) % GEAR_ORDER.length];
-          slot.dataset.gear = next;
-          slot.innerHTML = imgTag(ICON_PATHS.gear[next], next);
-        };
-        slot.addEventListener("click", advance);
-        slot.addEventListener("keydown", (e) => {
-          if(e.key === "Enter" || e.key === " "){
-            e.preventDefault();
-            advance();
-          }
-        });
-      });
-
-      row.querySelectorAll('input[type="radio"]').forEach(r => {
-        r.addEventListener("change", () => {
-          enforceSingleClimb();
-          updateDerivedTimersAndGainsUI();
-          updateRowBadges();
-        });
-      });
-
-      return row;
-    }
-
-    for(let i=0;i<5;i++) rowsEl.appendChild(makeRow(i));
-
-    function getSelectedClimbRow(){
-      const climb = rowsEl.querySelector('input[type="radio"][value="climb"]:checked');
-      if(!climb) return null;
-      const rowCard = climb.closest(".rowCard");
-      return rowCard ? rowCard.dataset.row : null;
-    }
-
-    function enforceSingleClimb(){
-      const climbRow = getSelectedClimbRow();
-      rowsEl.querySelectorAll('.rowCard').forEach(card => {
-        const isThis = card.dataset.row === climbRow;
-        const climbInput = card.querySelector('input[type="radio"][value="climb"]');
-        if(!climbInput) return;
-        climbInput.disabled = (climbRow !== null) && !isThis;
-      });
-      updateRowBadges();
-    }
-
-    function getRowActions(){
-      const actions = [];
-      rowsEl.querySelectorAll(".rowCard").forEach(card => {
-        const rowId = card.dataset.row;
-        const checked = card.querySelector('input[type="radio"]:checked');
-        actions.push({ rowId, action: checked ? checked.value : "loot" });
-      });
-      return actions;
-    }
-
     // ============================================================
     // BUILDINGS + GROUPING
     // ============================================================
-    // Your original 7 buildings, grouped into categories/rows:
-    // 1) Climb speed: Smithy, Alchemist, Armor Crafter
-    // 2) Loot/Gather gains: Guild Hall, Tavern
-    // 3) Faster looting: Mage Guild
-    // 4) Faster gathering: Druid Circle
     const BUILDINGS = [
       { key:"guildHall",    name:"Guild Hall",    desc:"Boost loot/gather gains (town management)." },
       { key:"smithy",       name:"Smithy",       desc:"Speeds up climbing (tools & gear)." },
@@ -1093,30 +1109,10 @@
     const BUILD_BY_KEY = Object.fromEntries(BUILDINGS.map(b => [b.key, b]));
 
     const BUILD_GROUPS = [
-      {
-        id: "climbSpeed",
-        title: "Climb speed",
-        hint: "Upgrades here reduce the climb timer.",
-        keys: ["smithy", "alchemist", "armorCrafter"]
-      },
-      {
-        id: "gains",
-        title: "Loot & gather gains",
-        hint: "Upgrades here increase gold/wood payouts.",
-        keys: ["guildHall", "tavern"]
-      },
-      {
-        id: "lootSpeed",
-        title: "Faster looting",
-        hint: "Upgrades here reduce the loot timer.",
-        keys: ["mageGuild"]
-      },
-      {
-        id: "gatherSpeed",
-        title: "Faster gathering",
-        hint: "Upgrades here reduce the gather timer.",
-        keys: ["druidCircle"]
-      }
+      { id: "climbSpeed", title: "Climb speed", hint: "Upgrades here reduce the climb timer.", keys: ["smithy", "alchemist", "armorCrafter"] },
+      { id: "gains", title: "Loot & gather gains", hint: "Upgrades here increase gold/wood payouts.", keys: ["guildHall", "tavern"] },
+      { id: "lootSpeed", title: "Faster looting", hint: "Upgrades here reduce the loot timer.", keys: ["mageGuild"] },
+      { id: "gatherSpeed", title: "Faster gathering", hint: "Upgrades here reduce the gather timer.", keys: ["druidCircle"] }
     ];
 
     const MAX_LEVEL = 12;
@@ -1141,8 +1137,9 @@
 
     // ============================================================
     // STATE
+    // NOTE: Using a new key so old gear-based saves don't collide.
     // ============================================================
-    const STORE_KEY = "party_town_tabs_external_icons_grouped_buildings_v1";
+    const STORE_KEY = "party_town_tabs_drag_characters_bonuses_rates_no_gear_v1";
 
     function loadState(){
       try{
@@ -1159,6 +1156,13 @@
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
     }
 
+    function defaultPartyRows(){
+      return Array.from({length:5}).map(() => ({
+        classes: [randClass(), randClass(), randClass()],
+        action: "loot"
+      }));
+    }
+
     function defaultState(){
       const levels = {};
       for(const b of BUILDINGS) levels[b.key] = 1;
@@ -1169,17 +1173,28 @@
         timers: { climbElapsed: 0, lootElapsed: 0, gatherElapsed: 0 },
         lastFrameMs: Date.now(),
         activeRightTab: "town",
-        currentEnemy: randEnemyKey()
+        currentEnemy: randEnemyKey(),
+        partyRows: defaultPartyRows()
       };
     }
 
     let state = loadState() || defaultState();
 
+    // normalize/repair
     if(!state.buildings) state.buildings = defaultState().buildings;
     if(!state.resources) state.resources = { gold:0, wood:0 };
     if(!state.timers) state.timers = { climbElapsed:0, lootElapsed:0, gatherElapsed:0 };
     if(state.activeRightTab !== "town" && state.activeRightTab !== "talents") state.activeRightTab = "town";
     if(!state.currentEnemy || !ENEMIES[state.currentEnemy]) state.currentEnemy = randEnemyKey();
+
+    if(!Array.isArray(state.partyRows) || state.partyRows.length !== 5){
+      state.partyRows = defaultPartyRows();
+    } else {
+      state.partyRows = state.partyRows.map(r => ({
+        classes: Array.isArray(r.classes) && r.classes.length === 3 ? r.classes : [randClass(), randClass(), randClass()],
+        action: (r.action === "climb" || r.action === "loot" || r.action === "gather") ? r.action : "loot"
+      }));
+    }
 
     for(const b of BUILDINGS){
       if(typeof state.buildings[b.key] !== "number") state.buildings[b.key] = 1;
@@ -1196,20 +1211,214 @@
     saveState();
 
     // ============================================================
-    // ROW BADGES (enemy for climb row, gold for loot, wood for gather)
+    // SINGLE CLIMB
     // ============================================================
-    function setNewEnemy(){
-      state.currentEnemy = randEnemyKey();
+    function getSelectedClimbRow(){
+      const idx = state.partyRows.findIndex(r => r.action === "climb");
+      return (idx >= 0) ? String(idx) : null;
+    }
+    function enforceSingleClimb(){
+      let first = -1;
+      for(let i=0;i<state.partyRows.length;i++){
+        if(state.partyRows[i].action === "climb"){
+          if(first === -1) first = i;
+          else state.partyRows[i].action = "loot";
+        }
+      }
       saveState();
-      updateRowBadges();
     }
 
+    // ============================================================
+    // CLASS SPEED BONUSES
+    // Warrior/Hunter: each reduces timer by 1 second for the activity they're assigned to
+    // ============================================================
+    const BASE = { climbSec: 120, lootSec: 15, gatherSec: 15 };
+
+    function activitySpeedBonusCounts(){
+      const bonus = { climb:0, loot:0, gather:0 };
+
+      for(const r of state.partyRows){
+        const a = r.action || "loot";
+        if(a !== "loot" && a !== "gather") continue; // no climb here
+        const c = countClasses(r.classes);
+        bonus[a] += (c.warrior + c.hunter);
+      }
+
+      return bonus;
+    }
+
+    function climbEnemyReductionSeconds(){
+      const climbRowIdx = state.partyRows.findIndex(r => r.action === "climb");
+      if(climbRowIdx < 0) return 0;
+
+      const enemy = state.currentEnemy;
+      const c = countClasses(state.partyRows[climbRowIdx].classes);
+
+      const matchByEnemy = {
+        undead: "priest",
+        orc: "warrior",
+        goblin: "hunter",
+        spider: "druid",
+      };
+
+      const matchClass = matchByEnemy[enemy] || null;
+      const matches = (matchClass ? (c[matchClass] || 0) : 0) + (c.mage || 0); // mage always counts
+      return matches * 5;
+    }
+
+    function derivedEffects(){
+      const lv = (k) => clampInt(state.buildings[k], 1, MAX_LEVEL);
+
+      const climbSpeedLv = (lv("smithy") - 1) + (lv("alchemist") - 1) + (lv("armorCrafter") - 1);
+      const climbFromBuildings = Math.max(5, BASE.climbSec - climbSpeedLv);
+
+      const gatherSpeedLv = (lv("druidCircle") - 1);
+      const gatherFromBuildings = Math.max(5, BASE.gatherSec - gatherSpeedLv);
+
+      const lootSpeedLv = (lv("mageGuild") - 1);
+      const lootFromBuildings = Math.max(5, BASE.lootSec - lootSpeedLv);
+
+      const tavernMult = 1 + 0.05 * (lv("tavern") - 1);
+      const guildMult  = 1 + 0.05 * (lv("guildHall") - 1);
+      const gainMult = tavernMult * guildMult;
+
+      const speedBonus = activitySpeedBonusCounts();
+      const climbSec = Math.max(5, climbFromBuildings - climbEnemyReductionSeconds());
+      const lootSec = Math.max(5, lootFromBuildings - speedBonus.loot);
+      const gatherSec = Math.max(5, gatherFromBuildings - speedBonus.gather);
+
+      return { climbSec, lootSec, gatherSec, gainMult };
+    }
+
+    function updateDerivedTimersAndGainsUI(){
+      const eff = derivedEffects();
+      climbTimerTextEl.textContent = `Climb every ${eff.climbSec}s`;
+      lootTimerTextEl.textContent = `Loot every ${eff.lootSec}s`;
+      gatherTimerTextEl.textContent = `Gather every ${eff.gatherSec}s`;
+      climbTimerSecEl.textContent = String(eff.climbSec);
+      lootTimerSecEl.textContent = String(eff.lootSec);
+      gatherTimerSecEl.textContent = String(eff.gatherSec);
+    }
+
+    // ============================================================
+    // PAYOUT BONUSES
+    // Mage: +wood on gather
+    // Priest: +gold on loot
+    // Druid: +both smaller
+    // ============================================================
+    const PAYOUT_BONUS = {
+      mageGather: 0.20,
+      priestLoot: 0.20,
+      druidBoth: 0.12
+    };
+
+    function rowPayoutMultiplierFor(action, row){
+      const c = countClasses(row.classes);
+      if(action === "gather"){
+        return 1 + (c.mage * PAYOUT_BONUS.mageGather) + (c.druid * PAYOUT_BONUS.druidBoth);
+      }
+      if(action === "loot"){
+        return 1 + (c.priest * PAYOUT_BONUS.priestLoot) + (c.druid * PAYOUT_BONUS.druidBoth);
+      }
+      return 1;
+    }
+
+    function predictNextLootPayout(){
+      const eff = derivedEffects();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+      const basePerGroup = lvlFactor * 10;
+
+      let total = 0;
+      for(const r of state.partyRows){
+        if(r.action !== "loot") continue;
+        total += basePerGroup * rowPayoutMultiplierFor("loot", r);
+      }
+      total = Math.round(total * eff.gainMult);
+      return total;
+    }
+
+    function predictNextGatherPayout(){
+      const eff = derivedEffects();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+      const basePerGroup = lvlFactor * 5;
+
+      let total = 0;
+      for(const r of state.partyRows){
+        if(r.action !== "gather") continue;
+        total += basePerGroup * rowPayoutMultiplierFor("gather", r);
+      }
+      total = Math.round(total * eff.gainMult);
+      return total;
+    }
+
+    function updateResourceUI(){
+      highestClimbedEl.textContent = String(state.highestClimbed);
+      const nextGold = predictNextLootPayout();
+      const nextWood = predictNextGatherPayout();
+      goldValEl.textContent = `${state.resources.gold} (+${nextGold})`;
+      woodValEl.textContent = `${state.resources.wood} (+${nextWood})`;
+    }
+
+    function canAfford(cost){
+      return state.resources.gold >= cost.gold && state.resources.wood >= cost.wood;
+    }
+    function spend(cost){
+      state.resources.gold -= cost.gold;
+      state.resources.wood -= cost.wood;
+      if(state.resources.gold < 0) state.resources.gold = 0;
+      if(state.resources.wood < 0) state.resources.wood = 0;
+    }
+
+    function payoutLootOnce(){
+      const eff = derivedEffects();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+      const basePerGroup = lvlFactor * 10;
+
+      let totalGold = 0;
+      for(const r of state.partyRows){
+        if(r.action !== "loot") continue;
+        totalGold += basePerGroup * rowPayoutMultiplierFor("loot", r);
+      }
+      totalGold = Math.round(totalGold * eff.gainMult);
+      if(totalGold <= 0) return 0;
+
+      state.resources.gold = clampInt(state.resources.gold + totalGold, 0, 999999999);
+      return totalGold;
+    }
+
+    function payoutGatherOnce(){
+      const eff = derivedEffects();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+      const basePerGroup = lvlFactor * 5;
+
+      let totalWood = 0;
+      for(const r of state.partyRows){
+        if(r.action !== "gather") continue;
+        totalWood += basePerGroup * rowPayoutMultiplierFor("gather", r);
+      }
+      totalWood = Math.round(totalWood * eff.gainMult);
+      if(totalWood <= 0) return 0;
+
+      state.resources.wood = clampInt(state.resources.wood + totalWood, 0, 999999999);
+      return totalWood;
+    }
+
+    function doClimb(){
+      const climbRow = getSelectedClimbRow();
+      if(climbRow === null) return false;
+      state.highestClimbed = clampInt(state.highestClimbed + 1, 1, 999999999);
+      return true;
+    }
+
+    // ============================================================
+    // ROW BADGES
+    // ============================================================
     function updateRowBadges(){
       const climbRow = getSelectedClimbRow();
       rowsEl.querySelectorAll(".rowCard").forEach(card => {
         const rowId = card.dataset.row;
-        const checked = card.querySelector('input[type="radio"]:checked');
-        const action = checked ? checked.value : "loot";
+        const idx = Number(rowId);
+        const action = state.partyRows[idx]?.action || "loot";
 
         const iconEl = card.querySelector(".taskIcon");
         const topEl  = card.querySelector(".taskText .top");
@@ -1235,41 +1444,142 @@
           topEl.textContent = "Idle";
           mainEl.textContent = "—";
         }
+
+        const climbExists = (climbRow !== null);
+        const climbInput = card.querySelector('input[type="radio"][value="climb"]');
+        if(climbInput){
+          climbInput.disabled = climbExists && (rowId !== climbRow);
+        }
       });
     }
 
     // ============================================================
-    // DERIVED EFFECTS
+    // DRAG & DROP CHARACTERS (swap one tile with another tile)
     // ============================================================
-    const BASE = { climbSec: 60, lootSec: 15, gatherSec: 15 };
+    let dragChar = null; // { row: number, slot: number }
 
-    function derivedEffects(){
-      const lv = (k) => clampInt(state.buildings[k], 1, MAX_LEVEL);
+    function swapCharacters(a, b){
+      if(!a || !b) return;
+      if(a.row === b.row && a.slot === b.slot) return;
 
-      const climbSpeedLv = (lv("smithy") - 1) + (lv("alchemist") - 1) + (lv("armorCrafter") - 1);
-      const climbSec = Math.max(5, BASE.climbSec - climbSpeedLv);
+      const ra = state.partyRows[a.row];
+      const rb = state.partyRows[b.row];
+      if(!ra || !rb) return;
 
-      const gatherSpeedLv = (lv("druidCircle") - 1);
-      const gatherSec = Math.max(5, BASE.gatherSec - gatherSpeedLv);
+      const tmp = ra.classes[a.slot];
+      ra.classes[a.slot] = rb.classes[b.slot];
+      rb.classes[b.slot] = tmp;
 
-      const lootSpeedLv = (lv("mageGuild") - 1);
-      const lootSec = Math.max(5, BASE.lootSec - lootSpeedLv);
+      saveState();
 
-      const tavernMult = 1 + 0.05 * (lv("tavern") - 1);
-      const guildMult  = 1 + 0.05 * (lv("guildHall") - 1);
-      const gainMult = tavernMult * guildMult;
+      updateDerivedTimersAndGainsUI();
+      updateResourceUI();
+      updateRowBadges();
 
-      return { climbSec, lootSec, gatherSec, gainMult };
+      showToast(`Swapped ${ra.classes[a.slot]} ↔ ${rb.classes[b.slot]}.`);
     }
 
-    function updateDerivedTimersAndGainsUI(){
-      const eff = derivedEffects();
-      climbTimerTextEl.textContent = `Climb every ${eff.climbSec}s`;
-      lootTimerTextEl.textContent = `Loot every ${eff.lootSec}s`;
-      gatherTimerTextEl.textContent = `Gather every ${eff.gatherSec}s`;
-      climbTimerSecEl.textContent = String(eff.climbSec);
-      lootTimerSecEl.textContent = String(eff.lootSec);
-      gatherTimerSecEl.textContent = String(eff.gatherSec);
+    function attachCharacterDnDHandlers(tileEl){
+      tileEl.addEventListener("dragstart", (e) => {
+        const row = Number(tileEl.dataset.row);
+        const slot = Number(tileEl.dataset.slot);
+        dragChar = { row, slot };
+        tileEl.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", JSON.stringify(dragChar));
+      });
+
+      tileEl.addEventListener("dragend", () => {
+        dragChar = null;
+        rowsEl.querySelectorAll(".iconTile").forEach(t => t.classList.remove("dragging","dropTarget"));
+      });
+
+      tileEl.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        tileEl.classList.add("dropTarget");
+      });
+
+      tileEl.addEventListener("dragleave", () => tileEl.classList.remove("dropTarget"));
+
+      tileEl.addEventListener("drop", (e) => {
+        e.preventDefault();
+        tileEl.classList.remove("dropTarget");
+
+        let src = dragChar;
+        if(!src){
+          try{ src = JSON.parse(e.dataTransfer.getData("text/plain")); }catch{}
+        }
+        const dst = { row: Number(tileEl.dataset.row), slot: Number(tileEl.dataset.slot) };
+        swapCharacters(src, dst);
+
+        renderRows();
+      });
+    }
+
+    // ============================================================
+    // RENDER PARTY ROWS (GEAR REMOVED)
+    // ============================================================
+    function renderRows(){
+      rowsEl.innerHTML = "";
+
+      for(let i=0;i<state.partyRows.length;i++){
+        const rowData = state.partyRows[i];
+        const row = document.createElement("div");
+        row.className = "rowCard";
+        row.dataset.row = String(i);
+
+        row.innerHTML = `
+          <div class="rowLeft">
+            <div class="rowTitle">
+              <div class="name">Row ${i + 1}</div>
+              <div class="meta">3 classes</div>
+            </div>
+
+            <div class="bigIcons">
+              ${rowData.classes.map((cls, slot) => `
+                <div class="iconTile" draggable="true" data-row="${i}" data-slot="${slot}" data-class="${cls}" title="Drag to swap">
+                  ${imgTag(ICON_PATHS.classes[cls], cls)}
+                  <div class="iconLabel">${cls}</div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+
+          <div class="rowRight">
+            <div class="taskViz" aria-label="Current activity for row ${i+1}">
+              <div class="taskIcon" aria-hidden="true"></div>
+              <div class="taskText">
+                <div class="top">Status</div>
+                <div class="main">—</div>
+              </div>
+            </div>
+
+            <div class="radioGroup" aria-label="Action selection for row ${i+1}">
+              ${radioOpt(i, "Climb", rowData.action)}
+              ${radioOpt(i, "Loot", rowData.action)}
+              ${radioOpt(i, "Gather", rowData.action)}
+            </div>
+          </div>
+        `;
+
+        row.querySelectorAll(".iconTile").forEach(tile => attachCharacterDnDHandlers(tile));
+
+        row.querySelectorAll('input[type="radio"]').forEach(r => {
+          r.addEventListener("change", () => {
+            state.partyRows[i].action = r.value;
+            enforceSingleClimb();
+            saveState();
+            updateDerivedTimersAndGainsUI();
+            updateRowBadges();
+            updateResourceUI();
+          });
+        });
+
+        rowsEl.appendChild(row);
+      }
+
+      updateRowBadges();
     }
 
     // ============================================================
@@ -1291,7 +1601,7 @@
       tabTalents.hidden = isTown;
 
       tabHint.textContent = isTown
-        ? "Town: upgrade buildings • timers & gains affected by levels"
+        ? "Town: upgrade buildings • timers & gains affected by levels + party"
         : "Talents: static skill tree (visual only)";
 
       state.activeRightTab = tabName;
@@ -1310,62 +1620,6 @@
         }
       });
     });
-
-    // ============================================================
-    // ECONOMY
-    // ============================================================
-    function updateResourceUI(){
-      highestClimbedEl.textContent = String(state.highestClimbed);
-      goldValEl.textContent = String(state.resources.gold);
-      woodValEl.textContent = String(state.resources.wood);
-    }
-
-    function canAfford(cost){
-      return state.resources.gold >= cost.gold && state.resources.wood >= cost.wood;
-    }
-    function spend(cost){
-      state.resources.gold -= cost.gold;
-      state.resources.wood -= cost.wood;
-      if(state.resources.gold < 0) state.resources.gold = 0;
-      if(state.resources.wood < 0) state.resources.wood = 0;
-    }
-
-    function payoutLoot(){
-      const eff = derivedEffects();
-      const actions = getRowActions();
-      const lvlFactor = Math.max(1, state.highestClimbed - 1);
-
-      let groupsLooting = 0;
-      for(const r of actions) if(r.action === "loot") groupsLooting++;
-      if(groupsLooting <= 0) return 0;
-
-      const basePerGroup = lvlFactor * 10;
-      const totalGold = Math.round(basePerGroup * groupsLooting * eff.gainMult);
-      state.resources.gold = clampInt(state.resources.gold + totalGold, 0, 999999999);
-      return totalGold;
-    }
-
-    function payoutGather(){
-      const eff = derivedEffects();
-      const actions = getRowActions();
-      const lvlFactor = Math.max(1, state.highestClimbed - 1);
-
-      let groupsGathering = 0;
-      for(const r of actions) if(r.action === "gather") groupsGathering++;
-      if(groupsGathering <= 0) return 0;
-
-      const basePerGroup = lvlFactor * 5;
-      const totalWood = Math.round(basePerGroup * groupsGathering * eff.gainMult);
-      state.resources.wood = clampInt(state.resources.wood + totalWood, 0, 999999999);
-      return totalWood;
-    }
-
-    function doClimb(){
-      const climbRow = getSelectedClimbRow();
-      if(climbRow === null) return false;
-      state.highestClimbed = clampInt(state.highestClimbed + 1, 1, 999999999);
-      return true;
-    }
 
     // ============================================================
     // BUILDINGS RENDER (GROUPED)
@@ -1457,7 +1711,6 @@
     function renderBuildings(){
       buildGroupsEl.innerHTML = "";
 
-      // total levels
       let total = 0;
       for(const b of BUILDINGS) total += clampInt(state.buildings[b.key], 1, MAX_LEVEL);
       totalLevelsEl.textContent = String(total);
@@ -1486,90 +1739,7 @@
     }
 
     // ============================================================
-    // TIMER LOOP
-    // ============================================================
-    function setBar(barEl, elapsedMs, periodSec){
-      const periodMs = periodSec * 1000;
-      const pct = periodMs <= 0 ? 0 : Math.min(100, (elapsedMs / periodMs) * 100);
-      barEl.style.width = pct + "%";
-    }
-
-    function tickFrame(nowMs){
-      const eff = derivedEffects();
-
-      const last = Number(state.lastFrameMs || nowMs);
-      let dt = nowMs - last;
-      if(dt < 0) dt = 0;
-      if(dt > 2000) dt = 2000;
-      state.lastFrameMs = nowMs;
-
-      state.timers.climbElapsed += dt;
-      state.timers.lootElapsed += dt;
-      state.timers.gatherElapsed += dt;
-
-      const climbMs = eff.climbSec * 1000;
-      const lootMs = eff.lootSec * 1000;
-      const gatherMs = eff.gatherSec * 1000;
-
-      if(climbMs > 0){
-        while(state.timers.climbElapsed >= climbMs){
-          state.timers.climbElapsed -= climbMs;
-          if(doClimb()){
-            // New climb cycle -> new enemy
-            state.currentEnemy = randEnemyKey();
-            saveState();
-            updateRowBadges();
-            updateResourceUI();
-
-            const e = ENEMIES[state.currentEnemy];
-            showToast(`Climbed! Highest climbed is now ${state.highestClimbed}. Next foe: ${e ? e.name : "???"}.`);
-          }
-        }
-      }
-
-      if(lootMs > 0){
-        let lootTotal = 0, events = 0;
-        while(state.timers.lootElapsed >= lootMs){
-          state.timers.lootElapsed -= lootMs;
-          const g = payoutLoot();
-          if(g > 0){ lootTotal += g; events++; }
-        }
-        if(events > 0){
-          updateResourceUI();
-          showToast(`Loot payout: +${lootTotal}g.`);
-        }
-      }
-
-      if(gatherMs > 0){
-        let gatherTotal = 0, events = 0;
-        while(state.timers.gatherElapsed >= gatherMs){
-          state.timers.gatherElapsed -= gatherMs;
-          const w = payoutGather();
-          if(w > 0){ gatherTotal += w; events++; }
-        }
-        if(events > 0){
-          updateResourceUI();
-          showToast(`Gather payout: +${gatherTotal}w.`);
-        }
-      }
-
-      setBar(climbBarEl, state.timers.climbElapsed, eff.climbSec);
-      setBar(lootBarEl, state.timers.lootElapsed, eff.lootSec);
-      setBar(gatherBarEl, state.timers.gatherElapsed, eff.gatherSec);
-
-      tickFrame._saveAccum = (tickFrame._saveAccum || 0) + dt;
-      if(tickFrame._saveAccum >= 1000){
-        tickFrame._saveAccum = 0;
-        saveState();
-        // This keeps costs/locked state fresh as resources change
-        renderBuildings();
-      }
-
-      requestAnimationFrame(tickFrame);
-    }
-
-    // ============================================================
-    // TALENTS (STATIC TREE) - unchanged
+    // TALENTS (STATIC TREE)
     // ============================================================
     function renderTalentTree(){
       const svg = document.getElementById("talentSvg");
@@ -1652,27 +1822,118 @@
     resetBtn.addEventListener("click", () => {
       state = defaultState();
       saveState();
+
+      enforceSingleClimb();
+      renderRows();
       updateResourceUI();
       updateDerivedTimersAndGainsUI();
       renderBuildings();
       renderTalentTree();
       setActiveTab(state.activeRightTab);
-      enforceSingleClimb();
-      updateRowBadges();
+      renderMatchupLegend();
+
       showToast("Reset done: everything set back to defaults.");
     });
 
     // ============================================================
+    // TIMER LOOP
+    // ============================================================
+    function setBar(barEl, elapsedMs, periodSec){
+      const periodMs = periodSec * 1000;
+      const pct = periodMs <= 0 ? 0 : Math.min(100, (elapsedMs / periodMs) * 100);
+      barEl.style.width = pct + "%";
+    }
+
+    function tickFrame(nowMs){
+      const eff = derivedEffects();
+
+      const last = Number(state.lastFrameMs || nowMs);
+      let dt = nowMs - last;
+      if(dt < 0) dt = 0;
+      if(dt > 2000) dt = 2000;
+      state.lastFrameMs = nowMs;
+
+      state.timers.climbElapsed += dt;
+      state.timers.lootElapsed += dt;
+      state.timers.gatherElapsed += dt;
+
+      const climbMs = eff.climbSec * 1000;
+      const lootMs = eff.lootSec * 1000;
+      const gatherMs = eff.gatherSec * 1000;
+
+      if(climbMs > 0){
+        while(state.timers.climbElapsed >= climbMs){
+          state.timers.climbElapsed -= climbMs;
+          if(doClimb()){
+            state.currentEnemy = randEnemyKey();
+            saveState();
+
+            updateRowBadges();
+            updateResourceUI();
+            renderMatchupLegend();
+
+            const e = ENEMIES[state.currentEnemy];
+            showToast(`Climbed! Highest climbed is now ${state.highestClimbed}. Next foe: ${e ? e.name : "???"}.`);
+          }
+        }
+      }
+
+      if(lootMs > 0){
+        let lootTotal = 0, events = 0;
+        while(state.timers.lootElapsed >= lootMs){
+          state.timers.lootElapsed -= lootMs;
+          const g = payoutLootOnce();
+          if(g > 0){ lootTotal += g; events++; }
+        }
+        if(events > 0){
+          updateResourceUI();
+          showToast(`Loot payout: +${lootTotal}g.`);
+        }
+      }
+
+      if(gatherMs > 0){
+        let gatherTotal = 0, events = 0;
+        while(state.timers.gatherElapsed >= gatherMs){
+          state.timers.gatherElapsed -= gatherMs;
+          const w = payoutGatherOnce();
+          if(w > 0){ gatherTotal += w; events++; }
+        }
+        if(events > 0){
+          updateResourceUI();
+          showToast(`Gather payout: +${gatherTotal}w.`);
+        }
+      }
+
+      setBar(climbBarEl, state.timers.climbElapsed, eff.climbSec);
+      setBar(lootBarEl, state.timers.lootElapsed, eff.lootSec);
+      setBar(gatherBarEl, state.timers.gatherElapsed, eff.gatherSec);
+
+      tickFrame._saveAccum = (tickFrame._saveAccum || 0) + dt;
+      if(tickFrame._saveAccum >= 1000){
+        tickFrame._saveAccum = 0;
+        saveState();
+        renderBuildings();
+        updateResourceUI();
+        updateDerivedTimersAndGainsUI();
+        updateRowBadges();
+      }
+
+      requestAnimationFrame(tickFrame);
+    }
+
+    // ============================================================
     // INIT
     // ============================================================
+    enforceSingleClimb();
+    renderRows();
     updateResourceUI();
     updateDerivedTimersAndGainsUI();
     renderBuildings();
     renderTalentTree();
     setActiveTab(state.activeRightTab);
-    enforceSingleClimb();
     updateRowBadges();
     requestAnimationFrame(tickFrame);
+    renderMatchupLegend();
   </script>
 </body>
 </html>

@@ -40,13 +40,7 @@
       padding: 12px 14px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
       backdrop-filter: blur(6px);
-      max-width: 360px;
-    }
-
-    .ui h1 {
-      margin: 0 0 6px 0;
-      font-size: 20px;
-      line-height: 1.2;
+      min-width: 120px;
     }
 
     .ui p {
@@ -57,7 +51,7 @@
     .score {
       font-weight: bold;
       font-size: 18px;
-      margin-top: 8px;
+      margin-top: 0;
     }
 
     .center-panel {
@@ -72,7 +66,7 @@
 
     .card {
       pointer-events: auto;
-      background: rgba(255, 255, 255, 0.88);
+      background: rgba(255, 255, 255, 0.9);
       border: 2px solid rgba(15, 41, 64, 0.12);
       border-radius: 22px;
       padding: 24px;
@@ -133,6 +127,97 @@
       border: 1px solid rgba(0,0,0,0.08);
     }
 
+    .route-ui {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 11;
+      width: min(760px, calc(100vw - 40px));
+      background: rgba(255, 255, 255, 0.82);
+      border: 2px solid rgba(15, 41, 64, 0.12);
+      border-radius: 18px;
+      padding: 12px 18px 28px 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      backdrop-filter: blur(6px);
+    }
+
+    .route-title {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 12px;
+      font-size: 16px;
+      color: #16324a;
+    }
+
+    .route-bar {
+      position: relative;
+      height: 50px;
+      padding: 0 16px;
+    }
+
+    .route-line {
+      position: absolute;
+      top: 20px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(22, 119, 255, 0.15);
+    }
+
+    .route-progress {
+      position: absolute;
+      top: 20px;
+      height: 6px;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(to right, #1677ff, #5db0ff);
+    }
+
+    .route-line,
+    .route-progress {
+      left: 16px;
+      right: 16px;
+    }
+
+    .route-stop {
+      position: absolute;
+      top: 30px;
+      transform: translateX(-50%);
+      font-size: 10px;
+      white-space: nowrap;
+      color: #26445f;
+    }
+
+    .route-stop::before {
+      content: "";
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #d7e7f8;
+      border: 2px solid #7eaad4;
+    }
+
+    .plane-marker {
+      position: absolute;
+      top: 1px;
+      left: 2%;
+      transform: translateX(-20%);
+      font-size: 22px;
+      transition: left 0.08s linear;
+      pointer-events: none;
+    }
+
+    .route-region {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 14px;
+      color: #35546f;
+    }
+
     @media (max-width: 700px) {
       .ui {
         max-width: calc(100vw - 24px);
@@ -141,20 +226,17 @@
         padding: 10px 12px;
       }
 
-      .ui h1 {
-        font-size: 18px;
-      }
-
-      .ui p {
-        font-size: 13px;
-      }
-
       .card h2 {
         font-size: 26px;
       }
 
       .card p {
         font-size: 15px;
+      }
+
+      .route-ui {
+        top: 12px;
+        width: calc(100vw - 24px);
       }
     }
   </style>
@@ -167,10 +249,27 @@
     <p>Best: <span id="best">0</span></p>
   </div>
 
+  <div class="route-ui">
+    <div class="route-title">Route: Tokyo → Budapest</div>
+    <div class="route-bar">
+      <div class="route-line"></div>
+      <div class="route-progress" id="routeProgress"></div>
+
+      <div class="route-stop" style="left: 0%;">Tokyo</div>
+      <div class="route-stop" style="left: 18%;">Korea</div>
+      <div class="route-stop" style="left: 40%;">Dubai</div>
+      <div class="route-stop" style="left: 72%;">Balkans</div>
+      <div class="route-stop" style="left: 100%; transform: translateX(-100%);">Budapest</div>
+
+      <div class="plane-marker" id="planeMarker">✈</div>
+    </div>
+    <div class="route-region" id="routeRegion">Currently over: Tokyo</div>
+  </div>
+
   <div class="center-panel" id="startPanel">
     <div class="card">
       <h2>Boarding Now</h2>
-      <p>Your are trying to get home from your holiday to save ISZIIR.</p>
+      <p>You are trying to get home from your holiday to save ISZIIR.</p>
       <p>The weather is fine, the snacks are average, and the airspace is... <em>energetic</em>.</p>
       <p>Avoid drones and missiles with WASD for as long as possible.</p>
       <button class="btn" id="startBtn">Start Flight</button>
@@ -179,9 +278,9 @@
 
   <div class="center-panel hidden" id="gameOverPanel">
     <div class="card">
-      <h2>Flight Interrupted</h2>
+      <h2 id="endTitle">Flight Interrupted</h2>
       <p id="gameOverText">You almost made it home.</p>
-      <p>Air traffic control described the event as “a bit suboptimal.”</p>
+      <p id="endSubtext">Air traffic control described the event as “a bit suboptimal.”</p>
       <button class="btn" id="restartBtn">Try Again</button>
     </div>
   </div>
@@ -199,11 +298,35 @@
     const startPanel = document.getElementById("startPanel");
     const gameOverPanel = document.getElementById("gameOverPanel");
     const gameOverText = document.getElementById("gameOverText");
+    const endTitle = document.getElementById("endTitle");
+    const endSubtext = document.getElementById("endSubtext");
     const startBtn = document.getElementById("startBtn");
     const restartBtn = document.getElementById("restartBtn");
 
+    const routeProgressEl = document.getElementById("routeProgress");
+    const planeMarkerEl = document.getElementById("planeMarker");
+    const routeRegionEl = document.getElementById("routeRegion");
+	
+	const clouds = [];
+
     let width = 0;
     let height = 0;
+	
+function createCloud(x = width + rand(0, 300)) {
+  const scale = rand(0.8, 1.8);
+  const baseY = rand(40, height * 0.75);
+
+  return {
+    x,
+    y: baseY,
+    baseY,
+    scale,
+    speed: 18 + scale * 35,
+    alpha: rand(0.45, 0.85),
+    drift: rand(0, Math.PI * 2),
+    driftSpeed: rand(0.3, 0.8)
+  };
+}
 
     function resize() {
       width = window.innerWidth;
@@ -211,6 +334,7 @@
       canvas.width = width;
       canvas.height = height;
     }
+
     window.addEventListener("resize", resize);
     resize();
 
@@ -221,19 +345,24 @@
         e.preventDefault();
       }
     });
+
     window.addEventListener("keyup", (e) => {
       keys[e.key.toLowerCase()] = false;
     });
 
     const game = {
       running: false,
+      won: false,
       score: 0,
       best: Number(localStorage.getItem("flight_home_best") || 0),
       time: 0,
       spawnTimer: 0,
       missileTimer: 0,
-      cloudOffset: 0,
-      shake: 0
+      shake: 0,
+      routeProgress: 0,
+      takeoffTime: 0,
+      takeoffDuration: 3.5,
+      routeSpeed: 0.008
     };
 
     bestEl.textContent = game.best;
@@ -260,18 +389,24 @@
         speed: Math.random() * 15 + 10
       });
     }
+	
+	for (let i = 0; i < 8; i++) {
+  clouds.push(createCloud(rand(0, width)));
+}
 
     function resetGame() {
       game.running = true;
+      game.won = false;
       game.score = 0;
       game.time = 0;
-      game.spawnTimer = 0;
-      game.missileTimer = 1.5;
-      game.cloudOffset = 0;
+      game.spawnTimer = 0.6;
+      game.missileTimer = 1.4;
       game.shake = 0;
+      game.routeProgress = 0;
+      game.takeoffTime = 0;
 
-      player.x = width * 0.18;
-      player.y = height * 0.5;
+      player.x = width * 0.08;
+      player.y = height * 0.78;
       player.trail = [];
 
       drones.length = 0;
@@ -279,6 +414,10 @@
       particles.length = 0;
 
       scoreEl.textContent = "0";
+      routeProgressEl.style.width = "0%";
+      planeMarkerEl.style.left = "2%";
+      routeRegionEl.textContent = "Currently over: Tokyo";
+
       startPanel.classList.add("hidden");
       gameOverPanel.classList.add("hidden");
     }
@@ -345,6 +484,58 @@
       }
     }
 
+    function updateRouteUI() {
+      const routePercent = Math.min(game.routeProgress, 1) * 100;
+      const clampedPercent = Math.min(Math.max(routePercent, 2), 100);
+
+      routeProgressEl.style.width = routePercent + "%";
+      planeMarkerEl.style.left = clampedPercent + "%";
+
+      let region = "Tokyo";
+      if (routePercent >= 18) region = "Korea";
+      if (routePercent >= 40) region = "Dubai";
+      if (routePercent >= 72) region = "Balkans";
+      if (routePercent >= 96) region = "Budapest";
+
+      routeRegionEl.textContent = "Currently over: " + region;
+    }
+
+    function crash(message) {
+      game.running = false;
+      game.shake = 1;
+      spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, 32, "#ff7f50");
+      spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, 14, "#fff0a8");
+
+      const finalScore = Math.floor(game.score);
+      if (finalScore > game.best) {
+        game.best = finalScore;
+        localStorage.setItem("flight_home_best", String(game.best));
+        bestEl.textContent = game.best;
+      }
+
+      endTitle.textContent = "Flight Interrupted";
+      gameOverText.textContent = message + " Final score: " + finalScore;
+      endSubtext.textContent = "Air traffic control described the event as “a bit suboptimal.”";
+      gameOverPanel.classList.remove("hidden");
+    }
+
+    function winGame() {
+      game.running = false;
+      game.won = true;
+
+      const finalScore = Math.floor(game.score);
+      if (finalScore > game.best) {
+        game.best = finalScore;
+        localStorage.setItem("flight_home_best", String(game.best));
+        bestEl.textContent = game.best;
+      }
+
+      endTitle.textContent = "Landed in Budapest";
+      gameOverText.textContent = "You made it home. Final score: " + finalScore;
+      endSubtext.textContent = "The landing was described as 'confident enough.'";
+      gameOverPanel.classList.remove("hidden");
+    }
+
     function update(dt) {
       if (!game.running) return;
 
@@ -352,16 +543,53 @@
       game.score += dt * 10;
       scoreEl.textContent = Math.floor(game.score);
 
-      const moveX =
-        (keys["arrowright"] || keys["d"] ? 1 : 0) -
-        (keys["arrowleft"] || keys["a"] ? 1 : 0);
+      game.takeoffTime += dt;
+      const takingOff = game.takeoffTime < game.takeoffDuration;
 
-      const moveY =
-        (keys["arrowdown"] || keys["s"] ? 1 : 0) -
-        (keys["arrowup"] || keys["w"] ? 1 : 0);
+      if (takingOff) {
+        player.x += 120 * dt;
+        player.y -= 70 * dt;
 
-      player.x += moveX * player.speed * dt;
-      player.y += moveY * player.speed * dt;
+        const moveY =
+          (keys["arrowdown"] || keys["s"] ? 1 : 0) -
+          (keys["arrowup"] || keys["w"] ? 1 : 0);
+
+        player.y += moveY * 120 * dt;
+      } else {
+        const moveX =
+          (keys["arrowright"] || keys["d"] ? 1 : 0) -
+          (keys["arrowleft"] || keys["a"] ? 1 : 0);
+
+        const moveY =
+          (keys["arrowdown"] || keys["s"] ? 1 : 0) -
+          (keys["arrowup"] || keys["w"] ? 1 : 0);
+
+        player.x += moveX * player.speed * dt;
+        player.y += moveY * player.speed * dt;
+
+        game.routeProgress += dt * game.routeSpeed;
+      }
+	  
+	  
+for (let i = 0; i < clouds.length; i++) {
+  const c = clouds[i];
+  const takeoffBoost = game.takeoffTime < game.takeoffDuration ? 1.8 : 1;
+
+  c.x -= c.speed * takeoffBoost * dt;
+  c.drift += c.driftSpeed * dt;
+  c.y = c.baseY + Math.sin(c.drift) * 8;
+
+  if (c.x < -220) {
+    clouds[i] = createCloud(width + rand(40, 220));
+  }
+}
+
+      updateRouteUI();
+
+      if (game.routeProgress >= 0.97) {
+        winGame();
+        return;
+      }
 
       player.x = clamp(player.x, 20, width - player.w - 20);
       player.y = clamp(player.y, 20, height - player.h - 20);
@@ -371,6 +599,7 @@
         y: player.y + player.h / 2 + rand(-3, 3),
         life: 0.45
       });
+
       if (player.trail.length > 40) player.trail.shift();
 
       for (let i = player.trail.length - 1; i >= 0; i--) {
@@ -378,20 +607,36 @@
         if (player.trail[i].life <= 0) player.trail.splice(i, 1);
       }
 
-      game.spawnTimer -= dt;
-      game.missileTimer -= dt;
+      if (!takingOff) {
+        game.spawnTimer -= dt;
+        game.missileTimer -= dt;
 
-      const droneInterval = Math.max(0.35, 1.0 - game.time * 0.015);
-      const missileInterval = Math.max(0.7, 2.2 - game.time * 0.02);
+        const routeT = Math.min(game.routeProgress, 1);
+        const droneInterval = Math.max(0.3, 1.0 - routeT * 0.35);
+        const missileInterval = Math.max(0.14, 1.2 - routeT * 1.25);
 
-      if (game.spawnTimer <= 0) {
-        spawnDrone();
-        game.spawnTimer = rand(droneInterval * 0.7, droneInterval * 1.2);
-      }
+        if (game.spawnTimer <= 0) {
+          spawnDrone();
+          game.spawnTimer = rand(droneInterval * 0.7, droneInterval * 1.2);
+        }
 
-      if (game.missileTimer <= 0) {
-        spawnMissile();
-        game.missileTimer = rand(missileInterval * 0.8, missileInterval * 1.15);
+        if (game.missileTimer <= 0) {
+          spawnMissile();
+
+          if (routeT > 0.55 && Math.random() < (routeT - 0.55) * 1.6) {
+            setTimeout(() => {
+              if (game.running) spawnMissile();
+            }, 180);
+          }
+
+          if (routeT > 0.82 && Math.random() < 0.45) {
+            setTimeout(() => {
+              if (game.running) spawnMissile();
+            }, 360);
+          }
+
+          game.missileTimer = rand(missileInterval * 0.8, missileInterval * 1.15);
+        }
       }
 
       for (let i = drones.length - 1; i >= 0; i--) {
@@ -455,23 +700,6 @@
       }
     }
 
-    function crash(message) {
-      game.running = false;
-      game.shake = 1;
-      spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, 32, "#ff7f50");
-      spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, 14, "#fff0a8");
-
-      const finalScore = Math.floor(game.score);
-      if (finalScore > game.best) {
-        game.best = finalScore;
-        localStorage.setItem("flight_home_best", String(game.best));
-        bestEl.textContent = game.best;
-      }
-
-      gameOverText.textContent = message + " Final score: " + finalScore;
-      gameOverPanel.classList.remove("hidden");
-    }
-
     function drawSky() {
       const g = ctx.createLinearGradient(0, 0, 0, height);
       g.addColorStop(0, "#87ceeb");
@@ -489,29 +717,29 @@
       }
       ctx.globalAlpha = 1;
 
-      const cloudTime = performance.now() * 0.00002;
-
-      for (let i = 0; i < 6; i++) {
-        const baseX = ((i * 260 - (cloudTime * 180 * (i % 2 === 0 ? 1 : 1.35))) % (width + 350)) - 120;
-        const baseY = 80 + i * 85 + Math.sin(cloudTime * 12 + i) * 10;
-        drawCloud(baseX, baseY, 1 + (i % 3) * 0.18);
-      }
+      for (const c of clouds) {
+  drawCloud(c.x, c.y, c.scale, c.alpha);
+}
     }
 
-    function drawCloud(x, y, scale = 1) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(scale, scale);
-      ctx.fillStyle = "rgba(255,255,255,0.8)";
-      ctx.beginPath();
-      ctx.arc(0, 0, 26, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.arc(28, -16, 28, Math.PI, Math.PI * 2);
-      ctx.arc(62, -6, 24, Math.PI * 1.1, Math.PI * 1.95);
-      ctx.arc(84, 2, 20, Math.PI * 1.5, Math.PI * 0.5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
+function drawCloud(x, y, scale = 1, alpha = 0.8) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = "white";
+
+  ctx.beginPath();
+  ctx.arc(0, 0, 26, Math.PI * 0.5, Math.PI * 1.5);
+  ctx.arc(28, -16, 28, Math.PI, Math.PI * 2);
+  ctx.arc(62, -6, 24, Math.PI * 1.1, Math.PI * 1.95);
+  ctx.arc(84, 2, 20, Math.PI * 1.5, Math.PI * 0.5);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
 
     function drawPlayer() {
       for (const t of player.trail) {
@@ -524,9 +752,16 @@
       ctx.globalAlpha = 1;
 
       ctx.save();
-      ctx.translate(player.x, player.y);
+      ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
 
-      // body
+      let tilt = 0;
+      if (game.running && game.takeoffTime < game.takeoffDuration) {
+        tilt = -0.22;
+      }
+
+      ctx.rotate(tilt);
+      ctx.translate(-player.w / 2, -player.h / 2);
+
       ctx.fillStyle = "#f4f7fb";
       ctx.beginPath();
       ctx.moveTo(8, player.h * 0.5);
@@ -535,7 +770,6 @@
       ctx.quadraticCurveTo(18, player.h, 8, player.h * 0.5);
       ctx.fill();
 
-      // nose
       ctx.fillStyle = "#d7e4f2";
       ctx.beginPath();
       ctx.moveTo(50, 4);
@@ -544,7 +778,6 @@
       ctx.closePath();
       ctx.fill();
 
-      // wing top
       ctx.fillStyle = "#b7cadc";
       ctx.beginPath();
       ctx.moveTo(24, 13);
@@ -553,7 +786,6 @@
       ctx.closePath();
       ctx.fill();
 
-      // wing bottom
       ctx.beginPath();
       ctx.moveTo(24, player.h - 13);
       ctx.lineTo(6, player.h + 8);
@@ -561,7 +793,6 @@
       ctx.closePath();
       ctx.fill();
 
-      // tail
       ctx.fillStyle = "#90aeca";
       ctx.beginPath();
       ctx.moveTo(8, 12);
@@ -570,11 +801,9 @@
       ctx.closePath();
       ctx.fill();
 
-      // stripe
       ctx.fillStyle = "#1677ff";
       ctx.fillRect(18, 12, 28, 4);
 
-      // windows
       ctx.fillStyle = "#8fd3ff";
       for (let i = 0; i < 4; i++) {
         ctx.beginPath();
@@ -634,56 +863,52 @@
     }
 
     function drawMissile(m) {
-	  ctx.save();
-	  ctx.translate(m.x, m.y);
+      ctx.save();
+      ctx.translate(m.x, m.y);
 
-	  // body
-	  ctx.fillStyle = "#cfd4da";
-	  ctx.beginPath();
-	  ctx.moveTo(14, 0);
-	  ctx.lineTo(56, 0);
-	  ctx.lineTo(48, m.h / 2);
-	  ctx.lineTo(56, m.h);
-	  ctx.lineTo(14, m.h);
-	  ctx.lineTo(0, m.h / 2);
-	  ctx.closePath();
-	  ctx.fill();
+      ctx.fillStyle = "#cfd4da";
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.lineTo(56, 0);
+      ctx.lineTo(48, m.h / 2);
+      ctx.lineTo(56, m.h);
+      ctx.lineTo(14, m.h);
+      ctx.lineTo(0, m.h / 2);
+      ctx.closePath();
+      ctx.fill();
 
-	  // nose (front, facing left)
-	  ctx.fillStyle = "#d7263d";
-	  ctx.beginPath();
-	  ctx.moveTo(14, 0);
-	  ctx.lineTo(0, m.h / 2);
-	  ctx.lineTo(14, m.h);
-	  ctx.closePath();
-	  ctx.fill();
+      ctx.fillStyle = "#d7263d";
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.lineTo(0, m.h / 2);
+      ctx.lineTo(14, m.h);
+      ctx.closePath();
+      ctx.fill();
 
-	  // fins (rear)
-	  ctx.fillStyle = "#8c98a4";
-	  ctx.fillRect(34, 4, 16, 3);
-	  ctx.fillRect(34, m.h - 7, 16, 3);
+      ctx.fillStyle = "#8c98a4";
+      ctx.fillRect(34, 4, 16, 3);
+      ctx.fillRect(34, m.h - 7, 16, 3);
 
-	  // flame at the back
-	  const flameLen = 12 + Math.sin(m.flame) * 5;
+      const flameLen = 12 + Math.sin(m.flame) * 5;
 
-	  ctx.fillStyle = "#ff9f1c";
-	  ctx.beginPath();
-	  ctx.moveTo(56, 3);
-	  ctx.lineTo(56 + flameLen, m.h / 2);
-	  ctx.lineTo(56, m.h - 3);
-	  ctx.closePath();
-	  ctx.fill();
+      ctx.fillStyle = "#ff9f1c";
+      ctx.beginPath();
+      ctx.moveTo(56, 3);
+      ctx.lineTo(56 + flameLen, m.h / 2);
+      ctx.lineTo(56, m.h - 3);
+      ctx.closePath();
+      ctx.fill();
 
-	  ctx.fillStyle = "#ffe066";
-	  ctx.beginPath();
-	  ctx.moveTo(56, 5);
-	  ctx.lineTo(56 + flameLen * 0.6, m.h / 2);
-	  ctx.lineTo(56, m.h - 5);
-	  ctx.closePath();
-	  ctx.fill();
+      ctx.fillStyle = "#ffe066";
+      ctx.beginPath();
+      ctx.moveTo(56, 5);
+      ctx.lineTo(56 + flameLen * 0.6, m.h / 2);
+      ctx.lineTo(56, m.h - 5);
+      ctx.closePath();
+      ctx.fill();
 
-	  ctx.restore();
-	}
+      ctx.restore();
+    }
 
     function drawParticles() {
       for (const p of particles) {
@@ -711,13 +936,19 @@
       drawParticles();
 
       if (game.running) {
-        const survivalText = game.score < 80
-          ? "In-flight movie: stress"
-          : game.score < 160
-          ? "Cabin crew says remain seated"
-          : game.score < 260
-          ? "Pilot is doing their best"
-          : "This route deserves a loyalty card";
+        let survivalText = "";
+
+        if (game.takeoffTime < game.takeoffDuration) {
+          survivalText = "Taking off... definitely a routine departure";
+        } else if (game.routeProgress < 0.18) {
+          survivalText = "Cruising altitude achieved";
+        } else if (game.routeProgress < 0.4) {
+          survivalText = "Crossing eastward with suspicious enthusiasm";
+        } else if (game.routeProgress < 0.72) {
+          survivalText = "Cabin crew recommends emotional resilience";
+        } else {
+          survivalText = "Final stretch: why are there so many missiles?";
+        }
 
         ctx.fillStyle = "rgba(15,41,64,0.75)";
         ctx.font = "bold 20px Arial";

@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Code Factory Incremental</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#111a33; --panel2:#0f1730;
+      --text:#e8eeff; --muted:#9db0ff; --accent:#7cf7c7; --warn:#ffd37a;
+      --bad:#ff7a9a; --good:#7cf7c7;
+      --border: rgba(255,255,255,.12);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 10%, #1a2a66 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:20px;}
+    header{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      padding:14px 16px; border:1px solid var(--border); border-radius:16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+    }
+    header h1{margin:0; font-size:18px; letter-spacing:.2px;}
+    header .sub{color:var(--muted); font-size:12px;}
+    .grid{
+      display:grid; gap:14px; margin-top:14px;
+      grid-template-columns: 1.15fr .85fr;
+    }
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr;} }
+
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius:16px;
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .card h2{margin:0 0 10px; font-size:14px; color:var(--muted); font-weight:600;}
+    .stats{
+      display:grid; gap:10px;
+      grid-template-columns: repeat(3, 1fr);
+    }
+    @media (max-width: 600px){ .stats{grid-template-columns:1fr;} }
+    .stat{
+      border:1px solid var(--border); border-radius:14px; padding:10px 12px;
+      background: rgba(0,0,0,.12);
+    }
+    .stat .k{font-size:11px; color:var(--muted);}
+    .stat .v{font-size:18px; margin-top:4px; font-variant-numeric: tabular-nums;}
+    .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+    button{
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(124,247,199,.22), rgba(124,247,199,.08));
+      color:var(--text);
+      padding:10px 12px; border-radius:14px;
+      font-weight:650;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+      transition: transform .05s ease, filter .15s ease, opacity .15s ease;
+      user-select:none;
+    }
+    button:hover{filter:brightness(1.08);}
+    button:active{transform: translateY(1px) scale(.99);}
+    button.secondary{
+      background: linear-gradient(180deg, rgba(157,176,255,.22), rgba(157,176,255,.08));
+    }
+    button.warn{
+      background: linear-gradient(180deg, rgba(255,211,122,.22), rgba(255,211,122,.08));
+    }
+    button.danger{
+      background: linear-gradient(180deg, rgba(255,122,154,.22), rgba(255,122,154,.08));
+    }
+    button:disabled{opacity:.45; cursor:not-allowed; filter:saturate(.6);}
+    .shop{
+      display:grid; gap:10px;
+      grid-template-columns: 1fr;
+    }
+    .item{
+      border:1px solid var(--border); border-radius:16px;
+      background: rgba(0,0,0,.12);
+      padding:10px 12px;
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      align-items:center;
+    }
+    .item .title{font-weight:700; display:flex; gap:8px; align-items:baseline;}
+    .item .title span{color:var(--muted); font-weight:600; font-size:12px;}
+    .item .desc{color:var(--muted); font-size:12px; margin-top:3px; line-height:1.25;}
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:11px; color:var(--muted);
+      border:1px solid rgba(255,255,255,.12); border-radius:999px;
+      padding:4px 8px; background: rgba(0,0,0,.12);
+    }
+    .log{
+      height:180px; overflow:auto;
+      border:1px solid var(--border); border-radius:14px;
+      padding:10px 12px;
+      background: rgba(0,0,0,.14);
+      font-size:12px; color:var(--muted);
+      line-height:1.35;
+    }
+    .log b{color:var(--text); font-weight:700;}
+    .footer{
+      margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      color:var(--muted); font-size:12px;
+    }
+    a{color:var(--accent); text-decoration:none}
+    .tiny{font-size:11px; color:var(--muted);}
+    .spark{
+      color:var(--accent); font-weight:800;
+      text-shadow: 0 0 18px rgba(124,247,199,.25);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Code Factory Incremental <span class="spark">◆</span></h1>
+        <div class="sub">Make code → sell projects → scale a tiny dev shop into a corporate machine.</div>
+      </div>
+      <div class="row">
+        <button class="secondary" id="btnSave">Save</button>
+        <button class="secondary" id="btnLoad">Load</button>
+        <button class="danger" id="btnReset">Reset</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Dashboard</h2>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="k">Code (lines)</div>
+            <div class="v" id="vCode">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Money</div>
+            <div class="v" id="vMoney">$0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Productivity</div>
+            <div class="v" id="vProd">x1.00</div>
+          </div>
+          <div class="stat">
+            <div class="k">Code / click</div>
+            <div class="v" id="vCPC">1</div>
+          </div>
+          <div class="stat">
+            <div class="k">Code / sec</div>
+            <div class="v" id="vCPS">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Projects / min</div>
+            <div class="v" id="vPPM">0</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="row">
+          <button id="btnClick">Make Code</button>
+          <button class="warn" id="btnSell">Sell as Project</button>
+          <span class="pill" id="pillProject">Need 25 code to ship a project</span>
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="log" id="log"></div>
+
+        <div class="footer">
+          <div class="tiny">
+            Tip: Sales can auto-sell. PMs boost everyone. Offices unlock bigger multipliers.
+          </div>
+          <div class="tiny">
+            Autosaves every 20s to localStorage.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Hiring & Upgrades</h2>
+        <div class="shop" id="shop"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      // ---------- Helpers ----------
+      const $ = (id) => document.getElementById(id);
+
+      function fmt(n){
+        // compact-ish formatting for large numbers
+        if (!isFinite(n)) return "∞";
+        const abs = Math.abs(n);
+        if (abs < 1000) return (Math.round(n*100)/100).toString();
+        const units = ["K","M","B","T","Qa","Qi","Sx","Sp","Oc","No"];
+        let u = -1, x = n;
+        while (Math.abs(x) >= 1000 && u < units.length-1){ x /= 1000; u++; }
+        return (Math.round(x*100)/100) + units[u];
+      }
+      function money(n){ return "$" + fmt(n); }
+
+      function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+      // ---------- Game State ----------
+      const defaultState = () => ({
+        code: 0,
+        money: 0,
+
+        // core
+        baseCodePerClick: 1,
+        baseProjectCodeCost: 25,
+        projectBaseValue: 12,
+
+        // hires
+        programmers: 0,
+        sales: 0,
+        pms: 0,
+
+        // new layers
+        officeLevel: 0,      // 0..?
+        cloudLevel: 0,
+        aiToolingLevel: 0,
+
+        // meta / stats
+        totalProjectsSold: 0,
+        totalCodeMade: 0,
+        lastTick: Date.now(),
+        log: []
+      });
+
+      let S = load() || defaultState();
+	  
+	  let shopDirty = true;
+	let lastShopKey = "";
+
+      // ---------- Derived Values ----------
+      function productivityMultiplier(){
+        // PMs scale: each PM +10% and small synergy with office/cloud/ai
+        const pmMult = 1 + 0.10 * S.pms;
+
+        // Office gives flat global multiplier; stronger every tier
+        const officeMult = 1 + 0.25 * S.officeLevel;
+
+        // Cloud boosts automation more, but also some global benefit
+        const cloudGlobal = 1 + 0.10 * S.cloudLevel;
+
+        // AI tooling is a late-game multiplier
+        const aiMult = 1 + 0.35 * S.aiToolingLevel;
+
+        // Synergy: a small extra boost for having multiple layers
+        const layers = (S.officeLevel>0) + (S.cloudLevel>0) + (S.aiToolingLevel>0);
+        const synergy = 1 + 0.06 * layers * Math.sqrt(S.pms + 1);
+
+        return pmMult * officeMult * cloudGlobal * aiMult * synergy;
+      }
+
+      function codePerClick(){
+        // small scaling with office and AI
+        const officeBonus = 1 + 0.08 * S.officeLevel;
+        const aiBonus = 1 + 0.12 * S.aiToolingLevel;
+        return S.baseCodePerClick * officeBonus * aiBonus * productivityMultiplier();
+      }
+
+      function codePerSecond(){
+        // Programmers generate code; cloud boosts automation a lot
+        const progBase = 0.8; // base lines/sec per programmer
+        const cloudAuto = 1 + 0.22 * S.cloudLevel;
+        const aiAuto = 1 + 0.10 * S.aiToolingLevel;
+        return S.programmers * progBase * cloudAuto * aiAuto * productivityMultiplier();
+      }
+
+      function projectCodeCost(){
+        // slight scaling with office (more complex projects later)
+        return Math.round(S.baseProjectCodeCost * (1 + 0.05 * S.totalProjectsSold));
+      }
+
+      function projectValue(){
+        // value increases with sales and layers; also random-ish "quality" factor
+        const salesMult = 1 + 0.18 * S.sales;
+        const officeMult = 1 + 0.15 * S.officeLevel;
+        const cloudMult = 1 + 0.12 * S.cloudLevel;
+        const aiMult = 1 + 0.20 * S.aiToolingLevel;
+
+        // mild progression with total sold
+        const progression = 1 + 0.02 * Math.sqrt(S.totalProjectsSold);
+
+        // stable pseudo-random "market vibe" that changes slowly
+        const t = Date.now()/1000;
+        const vibe = 0.92 + 0.16 * (0.5 + 0.5*Math.sin(t/9.0 + 1.7*Math.sin(t/31.0)));
+
+        return S.projectBaseValue * salesMult * officeMult * cloudMult * aiMult * progression * vibe;
+      }
+
+      function projectsPerMinuteAuto(){
+        // Sales auto-sell: each sales rep attempts to sell X projects/min if code is available
+        // Cloud helps throughput.
+        const base = 0.35; // projects/min per sales rep
+        const cloudBoost = 1 + 0.25 * S.cloudLevel;
+        const aiBoost = 1 + 0.12 * S.aiToolingLevel;
+        return S.sales * base * cloudBoost * aiBoost;
+      }
+
+      // ---------- Logging ----------
+      function addLog(msg){
+        S.log.push({t: Date.now(), msg});
+        if (S.log.length > 80) S.log.shift();
+      }
+      function renderLog(){
+        const el = $("log");
+        el.innerHTML = S.log.slice().reverse().map(x=>{
+          const d = new Date(x.t);
+          const hh = String(d.getHours()).padStart(2,"0");
+          const mm = String(d.getMinutes()).padStart(2,"0");
+          const ss = String(d.getSeconds()).padStart(2,"0");
+          return `<div><b>${hh}:${mm}:${ss}</b> — ${x.msg}</div>`;
+        }).join("");
+      }
+
+      // ---------- Actions ----------
+      function makeCodeManual(){
+        const gain = codePerClick();
+        S.code += gain;
+        S.totalCodeMade += gain;
+        addLog(`You wrote <b>${fmt(gain)}</b> lines of code.`);
+      }
+
+      function canSell(){
+        return S.code >= projectCodeCost();
+      }
+
+      function sellProject(count=1){
+        let sold = 0;
+        for (let i=0;i<count;i++){
+          const cost = projectCodeCost();
+          if (S.code < cost) break;
+          S.code -= cost;
+
+          const value = projectValue();
+          S.money += value;
+          S.totalProjectsSold += 1;
+          sold += 1;
+
+          addLog(`Shipped a project for <b>${money(value)}</b> (spent ${fmt(cost)} code).`);
+        }
+        return sold;
+      }
+
+      // ---------- Shop Items ----------
+      function costProgrammer(nOwned){
+        // exponential-ish
+        return Math.floor(35 * Math.pow(1.18, nOwned));
+      }
+      function costSales(nOwned){
+        return Math.floor(120 * Math.pow(1.22, nOwned));
+      }
+      function costPM(nOwned){
+        return Math.floor(250 * Math.pow(1.25, nOwned));
+      }
+
+      function costOffice(level){
+        // level 0 -> 1, etc.
+        return Math.floor(600 * Math.pow(1.75, level));
+      }
+      function costCloud(level){
+        return Math.floor(900 * Math.pow(1.70, level));
+      }
+      function costAI(level){
+        return Math.floor(1800 * Math.pow(1.85, level));
+      }
+
+      function officeName(level){
+        const names = ["Garage Desk", "Co-working Space", "Small Office", "Open Plan Floor", "Downtown HQ", "Global Campus"];
+        return names[clamp(level,0,names.length-1)];
+      }
+
+      function shopItems(){
+        return [
+          {
+            id: "programmer",
+            title: "Hire Programmer",
+            subtitle: `Owned: ${S.programmers}`,
+            desc: `Generates code automatically. Base ~0.8 lines/sec each (boosted by PMs, Cloud, AI).`,
+            cost: costProgrammer(S.programmers),
+            show: true,
+            buy: ()=>{
+              const c = costProgrammer(S.programmers);
+              if (S.money >= c){ S.money -= c; S.programmers++; addLog(`Hired a <b>Programmer</b>.`); shopDirty = true;  }
+            }
+          },
+          {
+            id: "sales",
+            title: "Hire Sales",
+            subtitle: `Owned: ${S.sales}`,
+            desc: `Auto-sells projects when you have enough code, and increases project value.`,
+            cost: costSales(S.sales),
+            show: S.programmers >= 1 || S.totalProjectsSold >= 2,
+            buy: ()=>{
+              const c = costSales(S.sales);
+              if (S.money >= c){ S.money -= c; S.sales++; addLog(`Hired <b>Sales</b>.`); shopDirty = true;  }
+            }
+          },
+          {
+            id: "pm",
+            title: "Hire Project Manager",
+            subtitle: `Owned: ${S.pms}`,
+            desc: `Boosts productivity for everyone (+10% each) + synergy bonuses.`,
+            cost: costPM(S.pms),
+            show: S.sales >= 1 || S.totalProjectsSold >= 6,
+            buy: ()=>{
+              const c = costPM(S.pms);
+              if (S.money >= c){ S.money -= c; S.pms++; addLog(`Hired a <b>Project Manager</b>.`); shopDirty = true; }
+            }
+          },
+          {
+            id: "office",
+            title: "Upgrade Office",
+            subtitle: `Level: ${S.officeLevel} (${officeName(S.officeLevel)})`,
+            desc: `Global productivity + unlocks bigger scaling. +25% per level.`,
+            cost: costOffice(S.officeLevel),
+            show: S.pms >= 1 || S.totalProjectsSold >= 12,
+            buy: ()=>{
+              const c = costOffice(S.officeLevel);
+              if (S.money >= c){ S.money -= c; S.officeLevel++; addLog(`Upgraded office to <b>${officeName(S.officeLevel)}</b>.`); shopDirty = true; }
+            }
+          },
+          {
+            id: "cloud",
+            title: "Cloud Infrastructure",
+            subtitle: `Level: ${S.cloudLevel}`,
+            desc: `Automation boost: programmers work faster; sales throughput increases.`,
+            cost: costCloud(S.cloudLevel),
+            show: S.officeLevel >= 1 || S.totalProjectsSold >= 20,
+            buy: ()=>{
+              const c = costCloud(S.cloudLevel);
+              if (S.money >= c){ S.money -= c; S.cloudLevel++; addLog(`Provisioned <b>Cloud Infrastructure</b> (lvl ${S.cloudLevel}).`); shopDirty = true; }
+            }
+          },
+          {
+            id: "ai",
+            title: "AI Tooling Suite",
+            subtitle: `Level: ${S.aiToolingLevel}`,
+            desc: `Big multiplier: boosts click power, automation, and project value.`,
+            cost: costAI(S.aiToolingLevel),
+            show: S.cloudLevel >= 1 || S.totalProjectsSold >= 35,
+            buy: ()=>{
+              const c = costAI(S.aiToolingLevel);
+              if (S.money >= c){ S.money -= c; S.aiToolingLevel++; addLog(`Adopted <b>AI Tooling</b> (lvl ${S.aiToolingLevel}).`); shopDirty = true; }
+            }
+          },
+        ];
+      }
+
+      function renderShop(){
+        const list = shopItems().filter(x=>x.show);
+        $("shop").innerHTML = list.map(item=>{
+          const can = S.money >= item.cost;
+          const btnClass = item.id === "office" ? "secondary" :
+                           item.id === "ai" ? "warn" :
+                           "secondary";
+          return `
+            <div class="item">
+              <div>
+                <div class="title">${item.title} <span>${item.subtitle}</span></div>
+                <div class="desc">${item.desc}</div>
+                <div style="margin-top:6px" class="pill">Cost: <b style="color:var(--text)">${money(item.cost)}</b></div>
+              </div>
+              <div>
+                <button class="${btnClass}" data-buy="${item.id}" ${can ? "" : "disabled"}>Buy</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        // bind buttons
+        document.querySelectorAll("[data-buy]").forEach(btn=>{
+          btn.onclick = () => {
+            const id = btn.getAttribute("data-buy");
+            const item = shopItems().find(x=>x.id===id);
+            if (item) item.buy();
+            updateUI();
+          };
+        });
+      }
+
+      // ---------- UI ----------
+      function updateUI(){
+		  $("vCode").textContent = fmt(S.code);
+		  $("vMoney").textContent = money(S.money);
+		  $("vProd").textContent = "x" + fmt(productivityMultiplier());
+		  $("vCPC").textContent = fmt(codePerClick());
+		  $("vCPS").textContent = fmt(codePerSecond());
+		  $("vPPM").textContent = fmt(projectsPerMinuteAuto());
+
+		  const need = projectCodeCost();
+		  $("pillProject").textContent = `Need ${fmt(need)} code to ship a project`;
+
+		  $("btnSell").disabled = !canSell();
+
+		  // Only re-render shop if something relevant changed
+		  const shopKey =
+			Math.floor(S.money) + "|" +
+			S.programmers + "|" + S.sales + "|" + S.pms + "|" +
+			S.officeLevel + "|" + S.cloudLevel + "|" + S.aiToolingLevel + "|" +
+			S.totalProjectsSold;
+
+		  if (shopDirty || shopKey !== lastShopKey){
+			renderShop();
+			lastShopKey = shopKey;
+			shopDirty = false;
+		  }
+
+		  renderLog();
+		}
+
+      // ---------- Main Loop ----------
+      function tick(){
+        const now = Date.now();
+        let dt = (now - S.lastTick) / 1000;
+        S.lastTick = now;
+
+        // guard huge offline dt (still allow some offline progress but cap)
+        dt = clamp(dt, 0, 5);
+
+        // auto code
+        const cps = codePerSecond();
+        if (cps > 0 && dt > 0){
+          const gain = cps * dt;
+          S.code += gain;
+          S.totalCodeMade += gain;
+        }
+
+        // auto selling by sales
+        const ppm = projectsPerMinuteAuto();
+        if (ppm > 0 && dt > 0){
+          const perSec = ppm / 60;
+          // we simulate using an accumulator to avoid randomness
+          S._sellAcc = (S._sellAcc || 0) + perSec * dt;
+
+          const sellNow = Math.floor(S._sellAcc);
+          if (sellNow > 0){
+            const sold = sellProject(sellNow);
+            S._sellAcc -= sold;
+            // if not enough code, keep remainder (it'll try later)
+          }
+        }
+
+        updateUI();
+      }
+
+      // ---------- Save/Load ----------
+      function save(){
+        try{
+          localStorage.setItem("code_factory_save_v1", JSON.stringify(S));
+          addLog(`Saved game.`);
+        }catch(e){
+          addLog(`Save failed: ${String(e)}`);
+        }
+      }
+      function load(){
+        try{
+          const raw = localStorage.getItem("code_factory_save_v1");
+          if (!raw) return null;
+          const obj = JSON.parse(raw);
+
+          // minimal migration safety
+          const base = defaultState();
+          return Object.assign(base, obj);
+        }catch(e){
+          return null;
+        }
+      }
+      function hardReset(){
+        S = defaultState();
+        localStorage.removeItem("code_factory_save_v1");
+        addLog("Reset complete.");
+        updateUI();
+      }
+
+      // ---------- Wire Controls ----------
+      $("btnClick").onclick = () => { makeCodeManual(); shopDirty = true; updateUI(); };
+      $("btnSell").onclick = () => { sellProject(1); shopDirty = true; updateUI(); };
+
+      $("btnSave").onclick = () => { save(); shopDirty = true; updateUI(); };
+      $("btnLoad").onclick = () => {
+        const L = load();
+        if (L){ S = L; addLog("Loaded save."); shopDirty = true; }
+        else addLog("No save found.");
+        updateUI();
+      };
+      $("btnReset").onclick = () => {
+        if (confirm("Reset your game? This cannot be undone.")) hardReset();
+      };
+
+      // autosave
+      setInterval(()=>{ save(); updateUI(); }, 20000);
+
+      // start log if empty
+      if (!S.log || !Array.isArray(S.log)) S.log = [];
+      if (S.log.length === 0){
+        addLog("You are a solo dev with a dream. Click “Make Code”.");
+      }
+
+      // kickoff
+      updateUI();
+      setInterval(tick, 100); // 10 FPS-ish
+    })();
+  </script>
+</body>
+</html>

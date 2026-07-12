@@ -1,0 +1,13 @@
+{
+  "title": "Route: Pakistan → Budapest",
+  "startRegion": "Pakistan",
+  "winRegion": "Budapest",
+  "winAt": 0.97,
+  "stops": [
+    { "label": "Pakistan", "at": 0.00 },
+    { "label": "Afghanistan", "at": 0.18 },
+    { "label": "Turkey", "at": 0.40 },
+    { "label": "Balkans", "at": 0.72 },
+    { "label": "Budapest", "at": 1.00 }
+  ]
+}

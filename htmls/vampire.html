@@ -1,0 +1,1878 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vampire Incremental Prototype (Single-File)</title>
+  <style>
+    :root{
+      --bg:#0b0b12;
+      --panel:#121225;
+      --panel2:#171733;
+      --text:#e8e8ff;
+      --muted:#a7a7c7;
+      --accent:#b10f2e;
+      --accent2:#5f2eea;
+      --good:#31d07a;
+      --warn:#ffcc66;
+      --bad:#ff4d6d;
+      --line:rgba(255,255,255,.08);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(177,15,46,.25), transparent 60%),
+        radial-gradient(900px 600px at 95% 0%, rgba(95,46,234,.18), transparent 55%),
+        radial-gradient(800px 500px at 50% 120%, rgba(49,208,122,.12), transparent 55%),
+        var(--bg);
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    header{
+      display:flex;gap:12px;align-items:center;justify-content:space-between;
+      padding:14px 16px;border:1px solid var(--line);
+      border-radius:var(--radius);background:linear-gradient(180deg,var(--panel),rgba(18,18,37,.65));
+      box-shadow:var(--shadow);
+      position:sticky;top:10px;z-index:10;backdrop-filter: blur(8px);
+    }
+    .title{
+      display:flex;flex-direction:column;gap:4px
+    }
+    .title h1{margin:0;font-size:16px;letter-spacing:.5px}
+    .title small{color:var(--muted)}
+    .topbar{
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;
+      max-width:65%;
+    }
+    .pill{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      padding:8px 10px;border-radius:999px;font-size:12px;
+      display:flex;gap:8px;align-items:center;
+    }
+    .pill b{font-family:var(--mono);font-weight:700}
+    .grid{
+      display:grid;
+      grid-template-columns: 260px 1fr 320px;
+      gap:14px;
+      margin-top:14px;
+    }
+    .panel{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,var(--panel2),rgba(18,18,37,.55));
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      display:flex;justify-content:space-between;align-items:center;
+      background:rgba(255,255,255,.02);
+    }
+    .panel .hd h2{margin:0;font-size:13px;letter-spacing:.6px;text-transform:uppercase}
+    .panel .bd{padding:12px 14px}
+    .tabs{
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .tabbtn{
+      text-align:left;
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      cursor:pointer;
+      display:flex;justify-content:space-between;align-items:center;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+    }
+    .tabbtn:hover{background:rgba(255,255,255,.05)}
+    .tabbtn:active{transform:translateY(1px)}
+    .tabbtn.active{
+      border-color: rgba(177,15,46,.55);
+      background: rgba(177,15,46,.12);
+    }
+    .badge{
+      font-size:11px;color:var(--muted);
+      border:1px solid var(--line);
+      padding:2px 8px;border-radius:999px;
+      background:rgba(0,0,0,.18);
+    }
+    .badge.locked{color:#ffd6dd;border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.08)}
+    .badge.new{color:#d8d2ff;border-color:rgba(95,46,234,.45);background:rgba(95,46,234,.10)}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .btn{
+      cursor:pointer;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:10px 12px;border-radius:12px;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+      font-size:13px;
+    }
+    .btn:hover{background:rgba(255,255,255,.06)}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{
+      border-color: rgba(177,15,46,.55);
+      background: rgba(177,15,46,.20);
+    }
+    .btn.primary:hover{background: rgba(177,15,46,.26)}
+    .btn.good{
+      border-color: rgba(49,208,122,.55);
+      background: rgba(49,208,122,.12);
+    }
+    .btn.warn{
+      border-color: rgba(255,204,102,.55);
+      background: rgba(255,204,102,.10);
+    }
+    .btn.bad{
+      border-color: rgba(255,77,109,.55);
+      background: rgba(255,77,109,.10);
+    }
+    .btn:disabled{
+      opacity:.45;cursor:not-allowed;transform:none !important;
+    }
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .card{
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(255,255,255,.03);
+      padding:12px;
+    }
+    .card h3{margin:0 0 8px;font-size:13px}
+    .card p{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.4}
+    .kv{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}
+    .kv b{color:var(--text);font-family:var(--mono)}
+    .bar{
+      height:10px;border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block;height:100%;
+      width:0%;
+      background:linear-gradient(90deg, rgba(177,15,46,.85), rgba(95,46,234,.7));
+    }
+    .log{
+      font-family:var(--mono);
+      font-size:11px;
+      color:#d7d7f5;
+      line-height:1.35;
+      max-height:380px;
+      overflow:auto;
+      padding-right:8px;
+    }
+    .log .t{color:#9fa0c9}
+    .log .good{color:#aef0c8}
+    .log .bad{color:#ffb3c1}
+    .sep{height:1px;background:var(--line);margin:10px 0}
+    .small{font-size:12px}
+    .rightStats{display:grid;grid-template-columns:1fr;gap:10px}
+    .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .stat{
+      border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(0,0,0,.12)
+    }
+    .stat .k{color:var(--muted);font-size:11px}
+    .stat .v{font-family:var(--mono);font-weight:700;margin-top:4px}
+    .hint{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .toast{
+      position:fixed;left:50%;bottom:14px;transform:translateX(-50%);
+      background:rgba(0,0,0,.65);
+      border:1px solid var(--line);
+      color:var(--text);
+      padding:10px 12px;border-radius:999px;
+      box-shadow:var(--shadow);
+      display:none;
+      max-width:min(760px,92vw);
+      font-size:12px;
+      backdrop-filter: blur(8px);
+    }
+    .kbd{
+      font-family:var(--mono);
+      border:1px solid var(--line);
+      border-bottom-color:rgba(255,255,255,.16);
+      background:rgba(255,255,255,.04);
+      padding:1px 6px;border-radius:6px;
+      font-size:11px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+      .topbar{max-width:unset;justify-content:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Vampire Incremental Prototype</h1>
+        <small id="subtitle">A single-file HTML+JS gameflow mock. (Save + run locally.)</small>
+      </div>
+      <div class="topbar" id="topbar"></div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: Tabs -->
+      <section class="panel">
+        <div class="hd">
+          <h2>Tabs</h2>
+          <span class="badge" id="phaseBadge">Phase 1</span>
+        </div>
+        <div class="bd">
+          <div class="tabs" id="tabs"></div>
+          <div class="hint">
+            Tips:
+            <div class="sep"></div>
+            <div>• Click <span class="kbd">H</span> to quick-hunt (Hunt tab).</div>
+            <div>• Keep <b>Suspicion</b> low once the Village is unlocked.</div>
+            <div>• Use Alchemy buffs before raids.</div>
+            <div>• End the run by beating the <b>Legendary Hero</b> (Defense tab) to gain <b>Wife Shards</b>, then prestige.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CENTER: Main Content -->
+      <main class="panel">
+        <div class="hd">
+          <h2 id="mainTitle">Hunt</h2>
+          <div class="row">
+            <button class="btn" id="btnSave">Save</button>
+            <button class="btn" id="btnLoad">Load</button>
+            <button class="btn bad" id="btnReset">Hard Reset</button>
+          </div>
+        </div>
+        <div class="bd" id="main"></div>
+      </main>
+
+      <!-- RIGHT: Stats + Log -->
+      <aside class="panel">
+        <div class="hd">
+          <h2>Run</h2>
+          <span class="badge" id="nightBadge">Night 1</span>
+        </div>
+        <div class="bd">
+          <div class="rightStats" id="rightStats"></div>
+          <div class="sep"></div>
+          <div class="row" style="justify-content:space-between">
+            <div class="muted small">Event Log</div>
+            <button class="btn" id="btnClearLog">Clear</button>
+          </div>
+          <div class="sep"></div>
+          <div class="log" id="log"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // ---------- Utilities ----------
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const fmt = (n) => {
+    if (!isFinite(n)) return "∞";
+    if (Math.abs(n) < 1e-6) return "0";
+    if (Math.abs(n) < 1000) return (Math.round(n*100)/100).toString();
+    const units = ["", "K", "M", "B", "T", "Qa", "Qi"];
+    let u = 0;
+    let x = n;
+    while (Math.abs(x) >= 1000 && u < units.length-1) { x /= 1000; u++; }
+    return (Math.round(x*100)/100) + units[u];
+  };
+  const now = () => Date.now();
+
+  // ---------- Game State ----------
+  const defaultState = () => ({
+    version: 1,
+    // Meta / run
+    run: 1,
+    phase: 1,
+    activeTab: "hunt",
+    lastTick: now(),
+    // Core resources
+    blood: 0,
+    soul: 0,
+    fear: 0,
+    knowledge: 0,
+    corruption: 0,
+    flesh: 0,
+    bone: 0,
+    silver: 0,
+    relics: 0,
+    // Thrall system
+    thralls: 0,
+    captives: 0,
+    obedience: 50, // 0..100
+    thrallCap: 0,
+    // Buildings
+    lair: { cellar: 0, cages: 0, chamber: 0, library: 0, kennels: 0 },
+    // Hunting upgrades
+    upgrades: { claws: 0, vision: 0, bat: 0, scent: 0 },
+    // Alchemy
+    ing: { nightshade: 0, moonwater: 0, ash: 0, sludge: 0 },
+    potions: { bloodwine: 0, mist: 0, obedience: 0, soultinct: 0 },
+    buffs: {
+      bloodMultUntil: 0,
+      mistUntil: 0,
+      obedienceBoostUntil: 0,
+      soulMultUntil: 0,
+    },
+    labHeat: 0, // 0..100
+    // Village / territory
+    territoryUnlocked: false,
+    nodes: {
+      farm: { control: 0, building: "none" },
+      tavern: { control: 0, building: "none" },
+      graveyard: { control: 0, building: "none" },
+      church: { control: 0, building: "none" },
+      watch: { control: 0, building: "none" },
+    },
+    suspicion: 0, // 0..100
+    population: 80,
+    devotion: 0,
+    taxes: 0,
+    // Defense / raids
+    raid: null, // { type, hp, hpMax, timeLeft }
+    army: { ghouls: 0, beasts: 0, knights: 0, assassins: 0 },
+    spells: { mistveil: 0, bloodspear: 0, charm: 0, soulburn: 0 },
+    // Prestige / wives
+    wifeShards: 0,
+    crimsonSigils: 0,
+    wives: { huntress: 0, thrallqueen: 0, alchemist: 0, matron: 0, warbride: 0, mystic: 0 },
+    // Permanent upgrades (simple)
+    perm: { bloodMult: 0, startThrall: 0, startAlchemy: 0, startVillage: 0 },
+    // Log
+    log: [],
+  });
+
+  let S = defaultState();
+
+  // ---------- Tabs / Unlocks ----------
+  const tabDefs = [
+    { id:"hunt", label:"Hunt", unlock: () => true },
+    { id:"lair", label:"Lair", unlock: () => S.blood >= 40 || S.thralls > 0 || S.phase >= 2 },
+    { id:"thralls", label:"Thralls", unlock: () => S.thralls > 0 || S.blood >= 60 || S.phase >= 2 },
+    { id:"alchemy", label:"Alchemy", unlock: () => (S.phase >= 3) || (S.knowledge >= 10) || (S.perm.startAlchemy > 0) },
+    { id:"village", label:"Village Map", unlock: () => (S.territoryUnlocked || S.phase >= 4 || S.perm.startVillage > 0) },
+    { id:"defense", label:"Defense", unlock: () => (S.phase >= 5) || (S.suspicion >= 20) || (S.army.ghouls > 0) },
+    { id:"wives", label:"Wives", unlock: () => (S.wifeShards > 0) || Object.values(S.wives).some(v=>v>0) },
+    { id:"prestige", label:"Prestige", unlock: () => true },
+  ];
+
+  function updatePhase() {
+    // Phase unlock logic by progression, not strict time:
+    // 1: hunting
+    // 2: thralls unlocked when blood >= 60 or create 1 thrall
+    // 3: alchemy unlocked when knowledge >= 10 or build library
+    // 4: village unlocked when Ritual of Eclipse done (we simplify: spend resources)
+    // 5: defense when suspicion >= 20 or control >= 50
+    // 6: legendary hero when suspicion >= 70 and control >= 70
+    if (S.phase < 2 && (S.blood >= 60 || S.thralls >= 1)) S.phase = 2;
+    if (S.phase < 3 && (S.knowledge >= 10 || S.lair.library >= 1 || S.perm.startAlchemy > 0)) S.phase = 3;
+    if (!S.territoryUnlocked && (S.perm.startVillage > 0)) S.territoryUnlocked = true;
+    if (S.phase < 4 && S.territoryUnlocked) S.phase = 4;
+
+    const avgControl = averageControl();
+    if (S.phase < 5 && (S.suspicion >= 20 || avgControl >= 40 || (S.army.ghouls+S.army.beasts+S.army.knights+S.army.assassins)>0)) S.phase = 5;
+    if (S.phase < 6 && (S.suspicion >= 60 && avgControl >= 65)) S.phase = 6;
+
+    document.getElementById("phaseBadge").textContent = `Phase ${S.phase}`;
+  }
+
+  function averageControl() {
+    const vals = Object.values(S.nodes).map(n => n.control);
+    return vals.reduce((a,b)=>a+b,0)/vals.length;
+  }
+
+  // ---------- Logging / Toast ----------
+  function addLog(msg, cls="") {
+    const t = new Date().toLocaleTimeString();
+    S.log.unshift({ t, msg, cls });
+    if (S.log.length > 120) S.log.pop();
+    renderLog();
+  }
+  function toast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=> el.style.display="none", 2200);
+  }
+
+  // ---------- Economy helpers ----------
+  function bloodMult() {
+    let m = 1 + (S.perm.bloodMult * 0.05);
+    // Huntress wife adds more
+    if (S.wives.huntress) m *= (1 + 0.15*S.wives.huntress);
+    // Bloodwine buff
+    if (now() < S.buffs.bloodMultUntil) m *= 1.35;
+    // War momentum (simplified)
+    if (S.wives.warbride) m *= (1 + 0.05*S.wives.warbride);
+    return m;
+  }
+  function soulMult() {
+    let m = 1;
+    if (now() < S.buffs.soulMultUntil) m *= 1.5;
+    if (S.wives.mystic) m *= (1 + 0.12*S.wives.mystic);
+    return m;
+  }
+  function obedienceEffective() {
+    let o = S.obedience;
+    if (now() < S.buffs.obedienceBoostUntil) o += 20;
+    if (S.wives.thrallqueen) o += 10*S.wives.thrallqueen;
+    return clamp(o, 0, 120);
+  }
+  function thrallEff() {
+    // 0.6 .. 1.3
+    const o = obedienceEffective();
+    return clamp(0.6 + (o/100)*0.7, 0.4, 1.4);
+  }
+  function mistActive() { return now() < S.buffs.mistUntil; }
+
+  // ---------- Save / Load ----------
+  const KEY = "vampire_incremental_prototype_v1";
+  function save() {
+    S.lastTick = now();
+    localStorage.setItem(KEY, JSON.stringify(S));
+    toast("Saved.");
+  }
+  function load() {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) { toast("No save found."); return; }
+    try {
+      const obj = JSON.parse(raw);
+      if (!obj || obj.version !== 1) throw new Error("Invalid save.");
+      S = obj;
+      addLog("Loaded save.", "t");
+      renderAll(true);
+      toast("Loaded.");
+    } catch(e){
+      console.error(e);
+      toast("Load failed.");
+    }
+  }
+  function hardReset() {
+    if (!confirm("Hard reset? This clears all progress.")) return;
+    localStorage.removeItem(KEY);
+    S = defaultState();
+    addLog("New run begins in darkness...", "t");
+    renderAll(true);
+    toast("Reset.");
+  }
+
+  // ---------- Tick Loop ----------
+  function tick(dt) {
+    // Passive production
+    // Thralls:
+    const eff = thrallEff();
+    const thr = S.thralls;
+    if (thr > 0) {
+      const bloodPS = (0.18 * thr) * eff * bloodMult();
+      const fearPS  = (0.04 * thr) * eff;
+      const captPS  = (0.015 * thr) * eff;
+      S.blood += bloodPS * dt;
+      S.fear += fearPS * dt;
+      S.captives += captPS * dt;
+
+      // Thrall hunger / obedience decay (light pressure)
+      const hungerDrain = 0.06 * thr * dt; // blood upkeep
+      if (S.blood >= hungerDrain) {
+        S.blood -= hungerDrain;
+        // stable obedience
+      } else {
+        // can't feed -> obedience drops
+        S.obedience -= 3.5 * dt;
+      }
+      S.obedience -= 0.15 * dt; // slow decay
+      S.obedience = clamp(S.obedience, 0, 100);
+    }
+
+    // Lair buildings passive
+    // cellar: improves blood storage/economy; we implement as small blood bonus
+    if (S.lair.cellar > 0) {
+      S.blood += (0.02 * S.lair.cellar) * bloodMult() * dt;
+    }
+    // chamber: fear
+    if (S.lair.chamber > 0) {
+      S.fear += (0.03 * S.lair.chamber) * dt;
+    }
+    // library: knowledge
+    if (S.lair.library > 0) {
+      S.knowledge += (0.03 * S.lair.library) * dt;
+    }
+    // cages: captive cap boost (we keep captives as float; cap influences conversion costs)
+    // kennels: bonus bone/flesh trickle
+    if (S.lair.kennels > 0) {
+      S.flesh += 0.015 * S.lair.kennels * dt;
+      S.bone += 0.01 * S.lair.kennels * dt;
+    }
+
+    // Alchemy: lab heat cools
+    S.labHeat = clamp(S.labHeat - 0.8*dt, 0, 100);
+
+    // Village outputs if unlocked
+    if (S.territoryUnlocked) {
+      const control = averageControl()/100;
+      // Controlled territory yields taxes + knowledge baseline
+      S.taxes += (0.08 * control) * dt;
+      S.knowledge += (0.03 * control) * dt;
+
+      // Buildings per node
+      for (const [id, node] of Object.entries(S.nodes)) {
+        if (node.control <= 0) continue;
+        const c = node.control/100;
+        switch(node.building){
+          case "bloodfarm":
+            // convert population -> blood
+            if (S.population > 0) {
+              const popUse = 0.02 * c * dt;
+              S.population = Math.max(0, S.population - popUse);
+              S.blood += (0.22 * c) * bloodMult() * dt;
+              S.suspicion += 0.08 * c * dt;
+            }
+            break;
+          case "shrine":
+            S.devotion += (0.10 * c) * dt;
+            S.suspicion += 0.05 * c * dt;
+            break;
+          case "tavern":
+            S.fear += (0.08 * c) * dt;
+            S.captives += (0.02 * c) * dt;
+            S.suspicion += 0.07 * c * dt;
+            break;
+          case "graveyard":
+            S.bone += (0.06 * c) * dt;
+            S.flesh += (0.03 * c) * dt;
+            S.suspicion += 0.04 * c * dt;
+            break;
+          case "market":
+            S.silver += (0.02 * c) * dt;
+            S.knowledge += (0.03 * c) * dt;
+            S.suspicion += 0.06 * c * dt;
+            break;
+        }
+      }
+
+      // Suspicion naturally rises with expansion, but can be reduced via spies/assassins
+      const assassinCount = S.army.assassins || 0;
+      const reduction = (0.08 * assassinCount) * dt;
+      S.suspicion = clamp(S.suspicion - reduction, 0, 100);
+
+      // Mist reduces suspicion gains (simplified: apply slight decay boost)
+      if (mistActive()) {
+        S.suspicion = clamp(S.suspicion - 0.5*dt, 0, 100);
+      }
+
+      // Trigger raids based on suspicion
+      maybeStartRaid(dt);
+    }
+
+    // Raid processing if active
+    processRaid(dt);
+
+    // Phase progression
+    updatePhase();
+
+    // UI update
+    renderTopbar();
+    renderRight();
+    // Main is rendered on actions/tabs, but we refresh some live bits:
+    refreshLiveUI();
+  }
+
+  function maybeStartRaid(dt) {
+    if (S.raid) return;
+    // chance per second increases with suspicion, reduced by mist potion
+    const base = (S.suspicion / 100) * 0.025; // up to 2.5% per sec at 100 suspicion
+    const p = mistActive() ? base*0.55 : base;
+    if (Math.random() < p * dt) {
+      // pick raid type
+      const s = S.suspicion;
+      let type = "Hunters";
+      if (s >= 70) type = "Paladin";
+      else if (s >= 45) type = "Priest";
+      else type = "Hunters";
+
+      const hpMax = (type==="Hunters" ? 240 : type==="Priest" ? 430 : 800) * (1 + (S.run-1)*0.12);
+      S.raid = { type, hp: hpMax, hpMax, timeLeft: 30 };
+      addLog(`Raid begins: ${type} arrive!`, "bad");
+      toast(`⚔️ Raid: ${type}`);
+      // auto-switch to Defense tab for clarity
+      if (tabUnlock("defense")) setTab("defense");
+    }
+  }
+
+  function armyPower() {
+    // Basic DPS based on units + wives
+    const { ghouls, beasts, knights, assassins } = S.army;
+    let dps = ghouls*2.1 + beasts*4.5 + knights*7.5 + assassins*1.8;
+    if (S.wives.warbride) dps *= (1 + 0.20*S.wives.warbride);
+    // Corruption adds slight scaling
+    dps *= (1 + S.corruption*0.002);
+    return dps;
+  }
+
+  function processRaid(dt) {
+    if (!S.raid) return;
+    // Base DPS
+    const dps = armyPower();
+    // spells: Soulburn is DOT for 8s
+    if (S.spells.soulburn > 0) {
+      S.raid.hp -= (12 * S.spells.soulburn) * dt;
+    }
+    S.raid.hp -= dps * dt;
+
+    // raid time
+    S.raid.timeLeft -= dt;
+
+    if (S.raid.hp <= 0) {
+      // Win -> loot
+      const type = S.raid.type;
+      const mult = (type==="Hunters" ? 1 : type==="Priest" ? 1.6 : 2.4);
+      const bloodLoot = 120*mult* bloodMult();
+      const silverLoot = 8*mult;
+      const relicLoot = (type==="Priest" ? 2 : type==="Paladin" ? 4 : 0);
+      S.blood += bloodLoot;
+      S.silver += silverLoot;
+      S.relics += relicLoot;
+      S.fear += 10*mult;
+      // war bride "momentum" in this prototype is just a little corruption
+      S.corruption += 2*mult;
+
+      addLog(`Raid repelled (${type}). Loot: +${fmt(bloodLoot)} blood, +${fmt(silverLoot)} silver${relicLoot?`, +${fmt(relicLoot)} relics`:``}.`, "good");
+      S.raid = null;
+      S.spells.soulburn = 0;
+      // reduce suspicion a bit on victory (people quiet down)
+      S.suspicion = clamp(S.suspicion - 8*mult, 0, 100);
+      return;
+    }
+
+    if (S.raid.timeLeft <= 0) {
+      // Loss -> penalty: suspicion spikes, population loss, resource drain
+      const type = S.raid.type;
+      const loss = (type==="Hunters" ? 0.10 : type==="Priest" ? 0.16 : 0.22);
+      const bLoss = S.blood * loss;
+      S.blood -= bLoss;
+      S.population = Math.max(0, S.population - (type==="Paladin"?18:10));
+      S.suspicion = clamp(S.suspicion + (type==="Paladin"?20:12), 0, 100);
+      addLog(`Raid overwhelms you (${type}). You lose ${fmt(bLoss)} blood and villagers flee.`, "bad");
+      S.raid = null;
+      S.spells.soulburn = 0;
+    }
+  }
+
+  // ---------- Actions ----------
+  function hunt(preyId) {
+    // Prey definitions
+    const prey = {
+      rat: { name:"Rat", hp: 14, blood: 6, flesh: 0, bone: 0, soulChance: 0.01, req: ()=>true },
+      deer:{ name:"Deer", hp: 38, blood: 18, flesh: 4, bone: 0, soulChance: 0.03, req: ()=>S.upgrades.vision>=1 || S.phase>=2 },
+      wolf:{ name:"Wolf", hp: 70, blood: 30, flesh: 6, bone: 2, soulChance: 0.05, req: ()=>S.upgrades.claws>=1 || S.phase>=2 },
+      traveler:{ name:"Traveler", hp: 90, blood: 45, flesh: 8, bone: 0, soulChance: 0.12, req: ()=>S.upgrades.scent>=1 || S.phase>=2 },
+      caravan:{ name:"Caravan", hp: 160, blood: 90, flesh: 12, bone: 2, soulChance: 0.16, silver: 10, req: ()=>S.upgrades.scent>=1 && S.upgrades.vision>=1 },
+    }[preyId];
+
+    if (!prey) return;
+    if (!prey.req()) {
+      toast("You can't reliably hunt that yet.");
+      return;
+    }
+
+    // Simulate combat: click damage is tied to claws + wives
+    const dmg = 10 + S.upgrades.claws*6 + (S.wives.huntress? 4*S.wives.huntress : 0);
+    const timeToKill = prey.hp / dmg; // seconds
+    // We simulate instant with "fatigue cost": more time => slightly higher injury risk
+    let bloodGain = prey.blood * bloodMult();
+    let fleshGain = prey.flesh;
+    let boneGain = prey.bone;
+
+    // Bat form reduces "time cost", improving yields slightly
+    if (S.upgrades.bat) bloodGain *= 1.05 + 0.02*S.upgrades.bat;
+
+    // Gain resources
+    S.blood += bloodGain;
+    S.flesh += fleshGain;
+    S.bone += boneGain;
+
+    // Soul roll
+    const soulRolls = (preyId==="rat"? 1 : preyId==="deer"? 1 : 2);
+    let soulGained = 0;
+    for (let i=0;i<soulRolls;i++){
+      if (Math.random() < prey.soulChance * soulMult()) soulGained += 1;
+    }
+    S.soul += soulGained;
+
+    // Silver from caravan
+    if (prey.silver) S.silver += prey.silver;
+
+    // Suspicion impact once village exists
+    if (S.territoryUnlocked) {
+      const sus = preyId==="rat"?0.02 : preyId==="deer"?0.08 : preyId==="wolf"?0.10 : preyId==="traveler"?0.18 : 0.28;
+      S.suspicion = clamp(S.suspicion + sus*10, 0, 100);
+    }
+
+    addLog(`Hunt: ${prey.name} → +${fmt(bloodGain)} blood${fleshGain?`, +${fmt(fleshGain)} flesh`:``}${boneGain?`, +${fmt(boneGain)} bone`:``}${soulGained?`, +${fmt(soulGained)} soul`:``}.`, "good");
+    updatePhase();
+    renderAll();
+  }
+
+  function buyUpgrade(id) {
+    const costs = {
+      claws:  { blood: 40*(1+S.upgrades.claws*0.7) },
+      vision: { blood: 55*(1+S.upgrades.vision*0.75) },
+      bat:    { blood: 80*(1+S.upgrades.bat*0.85), soul: 1 + Math.floor(S.upgrades.bat/2) },
+      scent:  { blood: 90*(1+S.upgrades.scent*0.9), soul: 2 + S.upgrades.scent },
+    }[id];
+
+    if (!costs) return;
+    if ((costs.blood||0) > S.blood || (costs.soul||0) > S.soul) { toast("Not enough resources."); return; }
+    S.blood -= costs.blood||0;
+    S.soul -= costs.soul||0;
+    S.upgrades[id]++;
+    addLog(`Upgrade: ${id} → level ${S.upgrades[id]}.`, "t");
+    updatePhase();
+    renderAll();
+  }
+
+  function buyBuilding(id) {
+    const lvl = S.lair[id];
+    const cost = {
+      cellar:  { blood: 100*(1+lvl*0.9), bone: 6*(1+lvl*0.6) },
+      cages:   { blood: 90*(1+lvl*0.85), flesh: 8*(1+lvl*0.6) },
+      chamber: { blood: 120*(1+lvl*0.95), bone: 10*(1+lvl*0.7) },
+      library: { blood: 140*(1+lvl*1.0), soul: 2+lvl, bone: 8*(1+lvl*0.5) },
+      kennels: { blood: 110*(1+lvl*0.9), flesh: 10*(1+lvl*0.7) },
+    }[id];
+
+    if ((cost.blood||0) > S.blood || (cost.soul||0) > S.soul || (cost.flesh||0) > S.flesh || (cost.bone||0) > S.bone) {
+      toast("Not enough resources.");
+      return;
+    }
+    S.blood -= cost.blood||0;
+    S.soul -= cost.soul||0;
+    S.flesh -= cost.flesh||0;
+    S.bone -= cost.bone||0;
+
+    S.lair[id]++;
+    // Thrall cap increases mainly by cages + cellar
+    if (id==="cages") S.thrallCap += 2;
+    if (id==="cellar") S.thrallCap += 1;
+
+    addLog(`Built: ${id} → level ${S.lair[id]}.`, "t");
+    updatePhase();
+    renderAll();
+  }
+
+  function convertCaptiveToThrall() {
+    const cap = currentThrallCap();
+    if (S.thralls >= cap) { toast("Thrall capacity reached. Build more cages/cellar."); return; }
+    if (S.captives < 1) { toast("No captives."); return; }
+    // cost scales with thralls
+    const bloodCost = 30*(1 + S.thralls*0.08);
+    if (S.blood < bloodCost) { toast("Not enough blood to perform the turning."); return; }
+    S.blood -= bloodCost;
+    S.captives -= 1;
+    S.thralls += 1;
+    S.obedience = clamp(S.obedience + 2, 0, 100);
+    addLog(`You turn a captive into a thrall. Thralls: ${S.thralls}.`, "good");
+    updatePhase();
+    renderAll();
+  }
+
+  function drainCaptive(mode) {
+    if (S.captives < 1) { toast("No captives."); return; }
+    S.captives -= 1;
+    if (mode==="fast") {
+      const gain = 55 * bloodMult();
+      S.blood += gain;
+      addLog(`Drain (fast): +${fmt(gain)} blood.`, "good");
+    } else if (mode==="deep") {
+      const gain = 85 * bloodMult();
+      S.blood += gain;
+      // deep drain increases suspicion if village exists, and gives chance soul
+      if (S.territoryUnlocked) S.suspicion = clamp(S.suspicion + 3, 0, 100);
+      if (Math.random() < 0.35*soulMult()) { S.soul += 1; addLog("Deep drain yields +1 soul.", "good"); }
+      addLog(`Drain (deep): +${fmt(gain)} blood (riskier).`, "good");
+    } else if (mode==="sacrifice") {
+      // sacrifice: more soul, less blood
+      const gainB = 35 * bloodMult();
+      S.blood += gainB;
+      const gainS = (Math.random() < 0.65*soulMult()) ? 1 : 0;
+      S.soul += gainS;
+      S.fear += 4;
+      addLog(`Sacrifice: +${fmt(gainB)} blood${gainS?`, +1 soul`:``}, +fear.`, "good");
+    }
+    updatePhase();
+    renderAll();
+  }
+
+  function punishThralls() {
+    const cost = 35*(1+S.thralls*0.06);
+    if (S.blood < cost) { toast("Not enough blood."); return; }
+    S.blood -= cost;
+    S.obedience = clamp(S.obedience + 18, 0, 100);
+    S.fear += 6;
+    addLog("You punish your thralls. Obedience rises.", "t");
+    renderAll();
+  }
+
+  function feedThralls() {
+    const cost = 45*(1+S.thralls*0.08);
+    if (S.blood < cost) { toast("Not enough blood."); return; }
+    S.blood -= cost;
+    S.obedience = clamp(S.obedience + 10, 0, 100);
+    addLog("You feed your thralls. They work faster.", "t");
+    renderAll();
+  }
+
+  function currentThrallCap() {
+    // base cap comes from cages/cellar + permanent starts
+    let cap = S.thrallCap + (S.lair.cages*2) + (S.lair.cellar*1) + 2;
+    if (S.perm.startThrall) cap += 1;
+    if (S.wives.thrallqueen) cap += 2*S.wives.thrallqueen;
+    return cap;
+  }
+
+  function craftPotion(id) {
+    // Ingredients are generated by simplified gather buttons (or passive trickle via library/kennels/territory),
+    // but we still implement real costs + heat/potency.
+    const recipes = {
+      bloodwine: { name:"Bloodwine", cost:{ blood:160, nightshade:3 }, time: 0, effect:"bloodMult" },
+      soultinct: { name:"Soul Distillate", cost:{ soul:2, moonwater:3 }, time: 0, effect:"soulMult" },
+      mist:      { name:"Mist Vial", cost:{ ash:4, soul:1 }, time: 0, effect:"mist" },
+      obedience: { name:"Obedience Draught", cost:{ blood:120, ash:2 }, time: 0, effect:"obedience" },
+    }[id];
+    if (!recipes) return;
+
+    // pay
+    const c = recipes.cost;
+    if ((c.blood||0) > S.blood || (c.soul||0) > S.soul) { toast("Not enough core resources."); return; }
+    if ((c.nightshade||0) > S.ing.nightshade || (c.moonwater||0) > S.ing.moonwater || (c.ash||0) > S.ing.ash || (c.sludge||0) > S.ing.sludge) {
+      toast("Not enough ingredients."); return;
+    }
+    S.blood -= c.blood||0;
+    S.soul -= c.soul||0;
+    S.ing.nightshade -= c.nightshade||0;
+    S.ing.moonwater -= c.moonwater||0;
+    S.ing.ash -= c.ash||0;
+    S.ing.sludge -= c.sludge||0;
+
+    // heat affects potency and explosion risk
+    S.labHeat = clamp(S.labHeat + 14, 0, 100);
+    const risk = Math.max(0, (S.labHeat - 70) / 100); // 0..0.3
+    if (Math.random() < risk) {
+      addLog("Alchemy mishap! The brew sputters into ash. (No effect.)", "bad");
+      toast("💥 Alchemy mishap");
+      renderAll();
+      return;
+    }
+
+    // Apply effect (duration)
+    const dur = (id==="bloodwine" ? 180 : id==="soultinct" ? 150 : id==="mist" ? 160 : 140) * (1 + S.labHeat/200);
+    if (id==="bloodwine") S.buffs.bloodMultUntil = now() + dur*1000;
+    if (id==="soultinct") S.buffs.soulMultUntil = now() + dur*1000;
+    if (id==="mist") S.buffs.mistUntil = now() + dur*1000;
+    if (id==="obedience") S.buffs.obedienceBoostUntil = now() + dur*1000;
+
+    S.potions[id]++;
+
+    addLog(`Crafted: ${recipes.name} (${Math.round(dur)}s).`, "good");
+    updatePhase();
+    renderAll();
+  }
+
+  function gatherIngredient(id) {
+    // Manual gather buttons so prototype has full loop.
+    // Each gather costs a bit of blood or time flavor? We'll do small blood cost for "operations".
+    const costB = 8;
+    if (S.blood < costB) { toast("Need a little blood to fuel operations."); return; }
+    S.blood -= costB;
+
+    let gain = 1;
+    // Alchemist wife improves yields
+    if (S.wives.alchemist) gain += 0.5*S.wives.alchemist;
+    // Lab heat improves gather slightly (fantasy: you have a running lab)
+    gain *= (1 + S.labHeat/250);
+
+    if (id==="nightshade") S.ing.nightshade += gain;
+    if (id==="moonwater") S.ing.moonwater += gain;
+    if (id==="ash") S.ing.ash += gain;
+    if (id==="sludge") S.ing.sludge += gain;
+
+    addLog(`Gathered ${id}: +${fmt(gain)} (cost ${costB} blood).`, "t");
+    renderAll();
+  }
+
+  function doRitualEclipse() {
+    // Unlock village
+    const cost = { blood: 900, bone: 40, soul: 8, fear: 40 };
+    if (S.territoryUnlocked) { toast("Already unlocked."); return; }
+    if (S.blood < cost.blood || S.bone < cost.bone || S.soul < cost.soul || S.fear < cost.fear) { toast("Not enough resources."); return; }
+    S.blood -= cost.blood; S.bone -= cost.bone; S.soul -= cost.soul; S.fear -= cost.fear;
+    S.territoryUnlocked = true;
+    addLog("Ritual of the Eclipse complete. The village lies open.", "good");
+    toast("🗺️ Village unlocked!");
+    updatePhase();
+    renderAll(true);
+  }
+
+  function controlNode(nodeId, approach) {
+    if (!S.territoryUnlocked) { toast("Unlock the village first."); return; }
+    const node = S.nodes[nodeId];
+    if (!node) return;
+
+    // Costs & effects
+    if (approach==="quiet") {
+      const costFear = 6;
+      if (S.fear < costFear) { toast("Need more fear."); return; }
+      S.fear -= costFear;
+      node.control = clamp(node.control + 8, 0, 100);
+      S.suspicion = clamp(S.suspicion + 1, 0, 100);
+      addLog(`Infiltration (quiet): ${nodeId} control +8%.`, "t");
+    }
+    if (approach==="massacre") {
+      const costBlood = 60;
+      if (S.blood < costBlood) { toast("Need more blood to unleash power."); return; }
+      S.blood -= costBlood;
+      node.control = clamp(node.control + 16, 0, 100);
+      S.suspicion = clamp(S.suspicion + 6, 0, 100);
+      S.fear += 8;
+      addLog(`Massacre: ${nodeId} control +16% (suspicion rises).`, "bad");
+    }
+    if (approach==="convert") {
+      const costSoul = 2;
+      if (S.soul < costSoul) { toast("Need more soul essence."); return; }
+      S.soul -= costSoul;
+      node.control = clamp(node.control + 12, 0, 100);
+      S.devotion += 4;
+      S.suspicion = clamp(S.suspicion + 3, 0, 100);
+      addLog(`Conversion: ${nodeId} control +12%, devotion grows.`, "t");
+    }
+
+    updatePhase();
+    renderAll();
+  }
+
+  function setNodeBuilding(nodeId, building) {
+    const node = S.nodes[nodeId];
+    if (!node) return;
+    // Must have some control
+    if (node.control < 20) { toast("Need at least 20% control to build."); return; }
+
+    const costs = {
+      none:     { },
+      bloodfarm:{ blood: 220, flesh: 12 },
+      shrine:   { blood: 160, soul: 4 },
+      tavern:   { blood: 200, fear: 10 },
+      graveyard:{ blood: 150, bone: 14 },
+      market:   { blood: 240, silver: 12 },
+    }[building];
+
+    if (!costs) return;
+
+    // Pay only if switching to a non-none and different building
+    if (node.building === building) return;
+    if (building !== "none") {
+      if ((costs.blood||0)>S.blood || (costs.soul||0)>S.soul || (costs.flesh||0)>S.flesh || (costs.bone||0)>S.bone || (costs.fear||0)>S.fear || (costs.silver||0)>S.silver) {
+        toast("Not enough resources.");
+        return;
+      }
+      S.blood -= costs.blood||0;
+      S.soul -= costs.soul||0;
+      S.flesh -= costs.flesh||0;
+      S.bone -= costs.bone||0;
+      S.fear -= costs.fear||0;
+      S.silver -= costs.silver||0;
+    }
+
+    node.building = building;
+    addLog(`Built in ${nodeId}: ${building}.`, "t");
+    renderAll();
+  }
+
+  function recruitUnit(type) {
+    const costs = {
+      ghouls: { blood: 140, flesh: 10 },
+      beasts: { blood: 220, sludge: 4, soul: 2 },
+      knights:{ blood: 320, bone: 18, soul: 3 },
+      assassins:{ blood: 180, silver: 8 },
+    }[type];
+
+    if (!costs) return;
+    if ((costs.blood||0)>S.blood || (costs.soul||0)>S.soul || (costs.flesh||0)>S.flesh || (costs.bone||0)>S.bone || (costs.silver||0)>S.silver || (costs.sludge||0)>S.ing.sludge) {
+      toast("Not enough resources.");
+      return;
+    }
+    S.blood -= costs.blood||0;
+    S.soul -= costs.soul||0;
+    S.flesh -= costs.flesh||0;
+    S.bone -= costs.bone||0;
+    S.silver -= costs.silver||0;
+    S.ing.sludge -= costs.sludge||0;
+
+    S.army[type] += 1;
+    addLog(`Recruited: ${type} (+1).`, "good");
+    updatePhase();
+    renderAll();
+  }
+
+  function castSpell(spell) {
+    if (!S.raid) { toast("No active raid."); return; }
+    const cd = 10; // simple cooldown for all
+    if (S.spells[spell] && S.spells[spell] > 0 && spell !== "soulburn") {
+      // We store cooldown end as negative? Simpler: store timestamp separately in UI; here we use a common map.
+    }
+    // Costs
+    if (spell==="mistveil") {
+      if (S.soul < 1) { toast("Need 1 soul."); return; }
+      S.soul -= 1;
+      S.buffs.mistUntil = now() + 45*1000;
+      addLog("Spell: Mist Veil (global mist for 45s).", "t");
+    }
+    if (spell==="bloodspear") {
+      const costB = 120;
+      if (S.blood < costB) { toast("Need more blood."); return; }
+      S.blood -= costB;
+      const dmg = 240 * (1 + (S.upgrades.claws*0.08)) * (S.wives.warbride? (1+0.15*S.wives.warbride):1);
+      S.raid.hp -= dmg;
+      addLog(`Spell: Blood Spear deals ${fmt(dmg)} damage.`, "good");
+    }
+    if (spell==="charm") {
+      if (S.soul < 2) { toast("Need 2 soul."); return; }
+      S.soul -= 2;
+      // temporary reduction in raid HP as "conversion"
+      const dmg = S.raid.hpMax * 0.12;
+      S.raid.hp -= dmg;
+      S.fear += 8;
+      addLog(`Spell: Charm turns an enemy—raid loses ${fmt(dmg)} HP.`, "good");
+    }
+    if (spell==="soulburn") {
+      if (S.soul < 2) { toast("Need 2 soul."); return; }
+      S.soul -= 2;
+      S.spells.soulburn = 8; // DOT stacks in seconds remaining, processed as damage in tick()
+      addLog("Spell: Soulburn (DOT for a short time).", "t");
+    }
+    renderAll();
+  }
+
+  function startLegendaryHero() {
+    if (S.raid) { toast("Finish the current raid first."); return; }
+    const avg = averageControl();
+    if (S.phase < 6 || S.suspicion < 60 || avg < 65) {
+      toast("Not ready. Raise control and suspicion (the world must notice you).");
+      return;
+    }
+    // Legendary raid
+    const hpMax = 1600 * (1 + (S.run-1)*0.15);
+    S.raid = { type:"Legendary Hero", hp: hpMax, hpMax, timeLeft: 45 };
+    addLog("⚔️ The Legendary Hero challenges you at dawn's edge.", "bad");
+    toast("⚔️ Legendary Hero!");
+    setTab("defense");
+    renderAll();
+  }
+
+  function onLegendaryDefeat() {
+    // called when raid ends and type is Legendary Hero
+    // We'll check in processRaid: detect type before nulling? We'll handle inside processRaid by reading type before clearing.
+  }
+
+  function prestige() {
+    // Earn sigils + shards based on achievements
+    const avg = averageControl();
+    const killed = (S.relics + S.silver) / 10; // rough proxy
+    let sigils = Math.floor((S.blood/1500) + (S.soul*0.8) + (avg/18) + (S.corruption/10));
+    sigils = Math.max(0, sigils);
+
+    // Reset run-state, keep wives + perm upgrades + currency
+    const kept = {
+      crimsonSigils: S.crimsonSigils + sigils,
+      wifeShards: S.wifeShards,
+      wives: { ...S.wives },
+      perm: { ...S.perm },
+      run: S.run + 1,
+    };
+
+    S = defaultState();
+    S.run = kept.run;
+    S.crimsonSigils = kept.crimsonSigils;
+    S.wifeShards = kept.wifeShards;
+    S.wives = kept.wives;
+    S.perm = kept.perm;
+
+    // Apply starting perks
+    if (S.perm.startThrall) {
+      S.thralls = 1;
+      S.thrallCap = 2;
+      S.blood = 40;
+      S.captives = 1;
+    }
+    if (S.perm.startAlchemy) {
+      S.knowledge = 10;
+      S.lair.library = 1;
+    }
+    if (S.perm.startVillage) {
+      S.territoryUnlocked = true;
+    }
+
+    addLog(`You slumber… and rise again. +${sigils} Crimson Sigils.`, "good");
+    toast(`Prestiged: +${sigils} Sigils`);
+    renderAll(true);
+  }
+
+  function buyPermanent(id) {
+    const costs = {
+      bloodMult: { sigils: 10*(1+S.perm.bloodMult) },
+      startThrall: { sigils: 25 },
+      startAlchemy: { sigils: 35 },
+      startVillage: { sigils: 55 },
+    }[id];
+    if (!costs) return;
+    const price = costs.sigils;
+    if (S.crimsonSigils < price) { toast("Not enough Crimson Sigils."); return; }
+
+    // one-time perks
+    if ((id==="startThrall" || id==="startAlchemy" || id==="startVillage") && S.perm[id]) {
+      toast("Already purchased.");
+      return;
+    }
+
+    S.crimsonSigils -= price;
+    if (id==="bloodMult") S.perm.bloodMult++;
+    else S.perm[id] = 1;
+
+    addLog(`Permanent upgrade purchased: ${id}.`, "t");
+    renderAll();
+  }
+
+  function createWife(type) {
+    const costs = {
+      huntress:   { shards: 4, sigils: 10 },
+      thrallqueen:{ shards: 5, sigils: 14 },
+      alchemist:  { shards: 5, sigils: 14 },
+      matron:     { shards: 6, sigils: 18 },
+      warbride:   { shards: 7, sigils: 22 },
+      mystic:     { shards: 8, sigils: 26 },
+    }[type];
+    if (!costs) return;
+    if (S.wifeShards < costs.shards || S.crimsonSigils < costs.sigils) {
+      toast("Not enough shards/sigils.");
+      return;
+    }
+    S.wifeShards -= costs.shards;
+    S.crimsonSigils -= costs.sigils;
+    S.wives[type] += 1;
+    addLog(`A pact is sealed: ${type} (level ${S.wives[type]}).`, "good");
+    toast("🩸 Bride created");
+    renderAll();
+  }
+
+  // Special: when raid ends, add legendary reward
+  const _processRaid = processRaid;
+  processRaid = function(dt){
+    if (!S.raid) return;
+    const typeBefore = S.raid.type;
+    const hpBefore = S.raid.hp;
+    // run original
+    // We'll inline original logic with a hook by calling the saved function? Not possible now since overwritten.
+  };
+
+  // Re-implement with hook (clean)
+  function processRaid(dt) {
+    if (!S.raid) return;
+
+    const type = S.raid.type;
+
+    const dps = armyPower();
+    if (S.spells.soulburn > 0) {
+      S.raid.hp -= (12 * S.spells.soulburn) * dt;
+      S.spells.soulburn = Math.max(0, S.spells.soulburn - dt);
+    }
+    S.raid.hp -= dps * dt;
+    S.raid.timeLeft -= dt;
+
+    if (S.raid.hp <= 0) {
+      // Win -> loot
+      if (type === "Legendary Hero") {
+        const shards = 2 + Math.floor(averageControl()/45);
+        const sigils = 8 + Math.floor(S.corruption/12);
+        S.wifeShards += shards;
+        S.crimsonSigils += sigils;
+        S.corruption += 12;
+        S.relics += 6;
+        S.fear += 25;
+        addLog(`Legendary Hero defeated! +${shards} Wife Shards, +${sigils} Sigils.`, "good");
+        toast("🏆 Legendary defeated");
+        // Reduce suspicion significantly (you silence witnesses...)
+        S.suspicion = clamp(S.suspicion - 25, 0, 100);
+      } else {
+        const mult = (type==="Hunters" ? 1 : type==="Priest" ? 1.6 : 2.4);
+        const bloodLoot = 120*mult* bloodMult();
+        const silverLoot = 8*mult;
+        const relicLoot = (type==="Priest" ? 2 : type==="Paladin" ? 4 : 0);
+        S.blood += bloodLoot;
+        S.silver += silverLoot;
+        S.relics += relicLoot;
+        S.fear += 10*mult;
+        S.corruption += 2*mult;
+        addLog(`Raid repelled (${type}). Loot: +${fmt(bloodLoot)} blood, +${fmt(silverLoot)} silver${relicLoot?`, +${fmt(relicLoot)} relics`:``}.`, "good");
+        S.suspicion = clamp(S.suspicion - 8*mult, 0, 100);
+      }
+
+      S.raid = null;
+      S.spells.soulburn = 0;
+      renderAll();
+      return;
+    }
+
+    if (S.raid.timeLeft <= 0) {
+      const loss = (type==="Hunters" ? 0.10 : type==="Priest" ? 0.16 : type==="Paladin" ? 0.22 : 0.26);
+      const bLoss = S.blood * loss;
+      S.blood -= bLoss;
+      S.population = Math.max(0, S.population - (type==="Legendary Hero"?24 : type==="Paladin"?18:10));
+      S.suspicion = clamp(S.suspicion + (type==="Legendary Hero"?24 : type==="Paladin"?20:12), 0, 100);
+      addLog(`Raid overwhelms you (${type}). You lose ${fmt(bLoss)} blood and villagers flee.`, "bad");
+      S.raid = null;
+      S.spells.soulburn = 0;
+    }
+  }
+
+  // ---------- Rendering ----------
+  function el(tag, attrs={}, children=[]) {
+    const n = document.createElement(tag);
+    for (const [k,v] of Object.entries(attrs)) {
+      if (k === "class") n.className = v;
+      else if (k === "html") n.innerHTML = v;
+      else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v);
+    }
+    for (const c of children) n.appendChild(c);
+    return n;
+  }
+
+  function tabUnlock(id) {
+    const def = tabDefs.find(t=>t.id===id);
+    return def ? def.unlock() : false;
+  }
+
+  function renderTabs() {
+    const wrap = document.getElementById("tabs");
+    wrap.innerHTML = "";
+    tabDefs.forEach(t => {
+      const unlocked = t.unlock();
+      const isActive = S.activeTab === t.id;
+      const btn = el("button", {
+        class: "tabbtn" + (isActive ? " active" : ""),
+        onclick: () => { if (unlocked) setTab(t.id); else toast("Locked."); }
+      }, [
+        el("span", { html: t.label }),
+        el("span", { class: "badge " + (unlocked ? (isActive ? "" : "") : "locked"), html: unlocked ? (t.id==="village" && !S.territoryUnlocked ? "Ritual" : "Open") : "Locked" })
+      ]);
+      wrap.appendChild(btn);
+    });
+  }
+
+  function setTab(id) {
+    if (!tabUnlock(id)) { toast("Locked."); return; }
+    S.activeTab = id;
+    renderAll(true);
+  }
+
+  function renderTopbar() {
+    const bar = document.getElementById("topbar");
+    const items = [
+      ["Blood", S.blood],
+      ["Soul", S.soul],
+      ["Fear", S.fear],
+      ["Knowledge", S.knowledge],
+      ["Flesh", S.flesh],
+      ["Bone", S.bone],
+      ["Silver", S.silver],
+      ["Relics", S.relics],
+      ["Shards", S.wifeShards],
+      ["Sigils", S.crimsonSigils],
+    ];
+    bar.innerHTML = "";
+    items.forEach(([k,v]) => {
+      // hide some until they matter
+      if (k==="Soul" && (v<=0 && S.phase<2 && S.perm.startAlchemy===0)) return;
+      if (k==="Fear" && (v<=0 && S.phase<2)) return;
+      if (k==="Knowledge" && (v<=0 && S.phase<3 && S.perm.startAlchemy===0)) return;
+      if ((k==="Silver"||k==="Relics") && v<=0 && S.phase<5) return;
+      if ((k==="Shards"||k==="Sigils") && v<=0 && S.run===1 && !Object.values(S.wives).some(x=>x>0)) return;
+
+      bar.appendChild(el("div",{class:"pill"},[
+        el("span",{html:k}),
+        el("b",{html:fmt(v)})
+      ]));
+    });
+    document.getElementById("nightBadge").textContent = `Night ${S.run}`;
+  }
+
+  function renderRight() {
+    const rs = document.getElementById("rightStats");
+    rs.innerHTML = "";
+
+    const cap = currentThrallCap();
+    const eff = thrallEff();
+    const avg = averageControl();
+
+    const stats = [
+      ["Phase", S.phase],
+      ["Thralls", `${fmt(S.thralls)} / ${fmt(cap)}`],
+      ["Obedience", `${Math.round(S.obedience)}%`],
+      ["Thrall Eff.", `${Math.round(eff*100)}%`],
+      ["Captives", fmt(S.captives)],
+      ["Suspicion", `${Math.round(S.suspicion)}%`],
+      ["Control Avg.", `${Math.round(avg)}%`],
+      ["Population", fmt(S.population)],
+      ["Devotion", fmt(S.devotion)],
+      ["Lab Heat", `${Math.round(S.labHeat)}%`],
+    ];
+
+    const grid = el("div",{class:"statgrid"});
+    stats.forEach(([k,v])=>{
+      // hide village-only stats
+      if ((k==="Suspicion"||k==="Control Avg."||k==="Population"||k==="Devotion") && !S.territoryUnlocked && S.perm.startVillage===0) return;
+      if (k==="Lab Heat" && (S.phase<3 && S.perm.startAlchemy===0)) return;
+      grid.appendChild(el("div",{class:"stat"},[
+        el("div",{class:"k",html:k}),
+        el("div",{class:"v",html:v})
+      ]));
+    });
+    rs.appendChild(grid);
+
+    // Raid card
+    if (S.raid) {
+      const r = S.raid;
+      const pct = clamp((r.hp / r.hpMax)*100, 0, 100);
+      const card = el("div",{class:"card"},[
+        el("h3",{html:`⚔️ ${r.type}`}),
+        el("p",{html:`Time left: <b>${Math.ceil(r.timeLeft)}s</b> &nbsp;•&nbsp; Your DPS: <b>${fmt(armyPower())}</b>`}),
+        el("div",{class:"bar"},[ el("i",{style:`width:${pct}%;`}) ]),
+        el("div",{class:"kv"},[
+          el("span",{html:"HP"}),
+          el("b",{html:`${fmt(Math.max(0,r.hp))} / ${fmt(r.hpMax)}`})
+        ])
+      ]);
+      rs.appendChild(card);
+    }
+  }
+
+  function renderLog() {
+    const lg = document.getElementById("log");
+    lg.innerHTML = "";
+    S.log.forEach(e=>{
+      const line = document.createElement("div");
+      line.innerHTML = `<span class="t">[${e.t}]</span> <span class="${e.cls||""}">${e.msg}</span>`;
+      lg.appendChild(line);
+    });
+  }
+
+  function refreshLiveUI() {
+    // Minimal: update a few text nodes in main screens if needed.
+    // For simplicity, we just re-render right + top bar each tick, main on actions.
+  }
+
+  function renderMain() {
+    const main = document.getElementById("main");
+    const title = document.getElementById("mainTitle");
+    main.innerHTML = "";
+
+    const tab = S.activeTab;
+    title.textContent = tabDefs.find(t=>t.id===tab)?.label || "Game";
+
+    if (tab === "hunt") return renderHunt(main);
+    if (tab === "lair") return renderLair(main);
+    if (tab === "thralls") return renderThralls(main);
+    if (tab === "alchemy") return renderAlchemy(main);
+    if (tab === "village") return renderVillage(main);
+    if (tab === "defense") return renderDefense(main);
+    if (tab === "wives") return renderWives(main);
+    if (tab === "prestige") return renderPrestige(main);
+  }
+
+  function renderHunt(main) {
+    const canDeer = (S.upgrades.vision>=1 || S.phase>=2);
+    const canWolf = (S.upgrades.claws>=1 || S.phase>=2);
+    const canTraveler = (S.upgrades.scent>=1 || S.phase>=2);
+    const canCaravan = (S.upgrades.scent>=1 && S.upgrades.vision>=1);
+
+    const left = el("div",{class:"cols"},[
+      el("div",{class:"card"},[
+        el("h3",{html:"Hunt"}),
+        el("p",{html:"Pick prey. Hunting is instant in this prototype, but yields scale with upgrades, buffs, and wives."}),
+        el("div",{class:"row"},[
+          el("button",{class:"btn primary", onclick:()=>hunt("rat")},[document.createTextNode("Hunt Rat")]),
+          el("button",{class:"btn", onclick:()=>hunt("deer"), disabled:!canDeer},[document.createTextNode(canDeer?"Hunt Deer":"Hunt Deer (locked)")]),
+          el("button",{class:"btn", onclick:()=>hunt("wolf"), disabled:!canWolf},[document.createTextNode(canWolf?"Hunt Wolf":"Hunt Wolf (locked)")]),
+          el("button",{class:"btn", onclick:()=>hunt("traveler"), disabled:!canTraveler},[document.createTextNode(canTraveler?"Ambush Traveler":"Ambush Traveler (locked)")]),
+          el("button",{class:"btn warn", onclick:()=>hunt("caravan"), disabled:!canCaravan},[document.createTextNode(canCaravan?"Ambush Caravan":"Ambush Caravan (locked)")]),
+        ]),
+        el("div",{class:"hint", html:`Hotkey: <span class="kbd">H</span> hunts a Rat.<br/>
+          Unlock Thralls by reaching <b>60 Blood</b> or creating your first thrall.`})
+      ]),
+      el("div",{class:"card"},[
+        el("h3",{html:"Hunting Upgrades"}),
+        el("p",{html:"These are your early ‘physical’ upgrades. They also unlock new prey tiers."}),
+        upgradeRow("Sharpen Claws", "claws", `Boosts bite damage and improves Blood Spear later.`),
+        upgradeRow("Night Vision", "vision", `Unlocks Deer and improves stealthy village actions.`),
+        upgradeRow("Bat Form", "bat", `Slight hunt yield bonus + smooth early pacing.`),
+        upgradeRow("Scent of Blood", "scent", `Unlocks Travelers & Caravans (risky but rewarding).`),
+      ]),
+    ]);
+
+    // Phase guidance
+    const guide = el("div",{class:"card"},[
+      el("h3",{html:"Phase Goals"}),
+      el("p",{html: phaseGoalText() }),
+      el("div",{class:"sep"}),
+      el("div",{class:"kv"},[el("span",{html:"Blood multiplier"}), el("b",{html:`x${fmt(bloodMult())}`})]),
+      el("div",{class:"kv"},[el("span",{html:"Soul multiplier"}), el("b",{html:`x${fmt(soulMult())}`})]),
+    ]);
+
+    main.appendChild(left);
+    main.appendChild(el("div",{class:"sep"}));
+    main.appendChild(guide);
+  }
+
+  function upgradeRow(label, id, desc) {
+    const lvl = S.upgrades[id]||0;
+    const costs = {
+      claws:  { blood: 40*(1+lvl*0.7) },
+      vision: { blood: 55*(1+lvl*0.75) },
+      bat:    { blood: 80*(1+lvl*0.85), soul: 1 + Math.floor(lvl/2) },
+      scent:  { blood: 90*(1+lvl*0.9), soul: 2 + lvl },
+    }[id];
+
+    const can = (S.blood >= (costs.blood||0)) && (S.soul >= (costs.soul||0));
+    const costText = `Cost: ${fmt(costs.blood||0)} blood` + (costs.soul?` + ${fmt(costs.soul)} soul`:"");
+    const btnText = `Buy (Lv ${lvl} → ${lvl+1})`;
+    return el("div",{class:"card", style:"margin-top:10px"},[
+      el("div",{class:"row", style:"justify-content:space-between"},[
+        el("div",{},[
+          el("div",{style:"font-weight:700"},[document.createTextNode(label)]),
+          el("div",{class:"muted small", html:desc}),
+          el("div",{class:"muted small", html:costText}),
+        ]),
+        el("button",{class:"btn", onclick:()=>buyUpgrade(id), disabled:!can},[document.createTextNode(btnText)])
+      ])
+    ]);
+  }
+
+  function renderLair(main) {
+    const cap = currentThrallCap();
+    const card = el("div",{class:"card"},[
+      el("h3",{html:"Your Lair"}),
+      el("p",{html:`Buildings add passive income and capacity. Thrall capacity currently <b>${fmt(cap)}</b>.`}),
+      el("div",{class:"cols"},[
+        buildingCard("Blood Cellar", "cellar", "Small passive blood gain; adds a little capacity."),
+        buildingCard("Cages", "cages", "Increases thrall capacity and captive throughput."),
+        buildingCard("Torture Chamber", "chamber", "Generates Fear passively."),
+        buildingCard("Crypt Library", "library", "Generates Dark Knowledge → unlock Alchemy."),
+        buildingCard("Kennels", "kennels", "Trickles Flesh + Bone; supports army later."),
+      ])
+    ]);
+    main.appendChild(card);
+  }
+
+  function buildingCard(label, id, desc) {
+    const lvl = S.lair[id]||0;
+    const cost = {
+      cellar:  { blood: 100*(1+lvl*0.9), bone: 6*(1+lvl*0.6) },
+      cages:   { blood: 90*(1+lvl*0.85), flesh: 8*(1+lvl*0.6) },
+      chamber: { blood: 120*(1+lvl*0.95), bone: 10*(1+lvl*0.7) },
+      library: { blood: 140*(1+lvl*1.0), soul: 2+lvl, bone: 8*(1+lvl*0.5) },
+      kennels: { blood: 110*(1+lvl*0.9), flesh: 10*(1+lvl*0.7) },
+    }[id];
+
+    const can = (S.blood >= (cost.blood||0)) &&
+                (S.soul >= (cost.soul||0)) &&
+                (S.flesh >= (cost.flesh||0)) &&
+                (S.bone >= (cost.bone||0));
+
+    const costTxt =
+      `Cost: ${fmt(cost.blood||0)} blood` +
+      (cost.soul?` + ${fmt(cost.soul)} soul`:"") +
+      (cost.flesh?` + ${fmt(cost.flesh)} flesh`:"") +
+      (cost.bone?` + ${fmt(cost.bone)} bone`:"");
+
+    return el("div",{class:"card"},[
+      el("h3",{html:`${label} <span class="muted">(Lv ${lvl})</span>`}),
+      el("p",{html:desc}),
+      el("div",{class:"muted small", html:costTxt}),
+      el("div",{class:"row", style:"margin-top:10px"},[
+        el("button",{class:"btn", onclick:()=>buyBuilding(id), disabled:!can},[document.createTextNode(`Build → Lv ${lvl+1}`)])
+      ])
+    ]);
+  }
+
+  function renderThralls(main) {
+    const cap = currentThrallCap();
+    const eff = thrallEff();
+    const card = el("div",{class:"card"},[
+      el("h3",{html:"Thralls & Captives"}),
+      el("p",{html:`Thralls generate Blood/Fear/Captives automatically, but require upkeep. Current efficiency: <b>${Math.round(eff*100)}%</b>.`}),
+      el("div",{class:"kv"},[el("span",{html:"Thralls"}), el("b",{html:`${fmt(S.thralls)} / ${fmt(cap)}`})]),
+      el("div",{class:"kv"},[el("span",{html:"Captives"}), el("b",{html:fmt(S.captives)})]),
+      el("div",{class:"kv"},[el("span",{html:"Obedience"}), el("b",{html:`${Math.round(S.obedience)}%`})]),
+      el("div",{class:"sep"}),
+      el("div",{class:"row"},[
+        el("button",{class:"btn primary", onclick:()=>convertCaptiveToThrall()},[document.createTextNode("Turn Captive → Thrall")]),
+        el("button",{class:"btn", onclick:()=>drainCaptive("fast")},[document.createTextNode("Drain Captive (fast)")]),
+        el("button",{class:"btn warn", onclick:()=>drainCaptive("deep")},[document.createTextNode("Drain Captive (deep)")]),
+        el("button",{class:"btn", onclick:()=>drainCaptive("sacrifice")},[document.createTextNode("Sacrifice Captive")]),
+      ]),
+      el("div",{class:"sep"}),
+      el("div",{class:"row"},[
+        el("button",{class:"btn", onclick:()=>feedThralls(), disabled:S.thralls<=0},[document.createTextNode("Feed Thralls")]),
+        el("button",{class:"btn bad", onclick:()=>punishThralls(), disabled:S.thralls<=0},[document.createTextNode("Punish Thralls")]),
+      ]),
+      el("div",{class:"hint", html:`Tip: If you can’t feed upkeep, obedience falls and production slows. Build <b>Cages</b> for capacity.<br/>
+        Unlock Alchemy by building a <b>Crypt Library</b> or reaching <b>10 Knowledge</b>.`})
+    ]);
+    main.appendChild(card);
+  }
+
+  function renderAlchemy(main) {
+    const activeBuffs = [];
+    if (now() < S.buffs.bloodMultUntil) activeBuffs.push(`Bloodwine (${Math.ceil((S.buffs.bloodMultUntil-now())/1000)}s)`);
+    if (now() < S.buffs.soulMultUntil) activeBuffs.push(`Soul Distillate (${Math.ceil((S.buffs.soulMultUntil-now())/1000)}s)`);
+    if (now() < S.buffs.mistUntil) activeBuffs.push(`Mist (${Math.ceil((S.buffs.mistUntil-now())/1000)}s)`);
+    if (now() < S.buffs.obedienceBoostUntil) activeBuffs.push(`Obedience (${Math.ceil((S.buffs.obedienceBoostUntil-now())/1000)}s)`);
+
+    const card = el("div",{class:"card"},[
+      el("h3",{html:"Alchemy Lab"}),
+      el("p",{html:`Craft temporary buffs to spike production and control raids. Heat increases potency but can cause mishaps when very high.`}),
+      el("div",{class:"kv"},[el("span",{html:"Lab Heat"}), el("b",{html:`${Math.round(S.labHeat)}%`})]),
+      el("div",{class:"kv"},[el("span",{html:"Active Buffs"}), el("b",{html: activeBuffs.length ? activeBuffs.join(", ") : "None"})]),
+      el("div",{class:"sep"}),
+      el("div",{class:"cols"},[
+        el("div",{class:"card"},[
+          el("h3",{html:"Ingredients"}),
+          el("p",{html:"Gathering costs a little blood in this prototype (fueling operations)."}),
+          ingredientRow("Nightshade", "nightshade"),
+          ingredientRow("Moonwater", "moonwater"),
+          ingredientRow("Ash", "ash"),
+          ingredientRow("Sludge", "sludge"),
+        ]),
+        el("div",{class:"card"},[
+          el("h3",{html:"Recipes"}),
+          el("p",{html:"Crafting applies an immediate buff (duration scales slightly with heat)."}),
+          recipeRow("Bloodwine", "bloodwine", "Boost Blood gain", "160 blood + 3 nightshade"),
+          recipeRow("Soul Distillate", "soultinct", "Boost Soul chance", "2 soul + 3 moonwater"),
+          recipeRow("Mist Vial", "mist", "Reduce raids & suspicion", "1 soul + 4 ash"),
+          recipeRow("Obedience Draught", "obedience", "Boost thrall obedience", "120 blood + 2 ash"),
+        ]),
+      ]),
+      el("div",{class:"sep"}),
+      el("div",{class:"card"},[
+        el("h3",{html:"Ritual Milestone"}),
+        el("p",{html:"Unlock the Village Map (Phase 4). This is your first major mid-run milestone spend."}),
+        el("div",{class:"muted small", html:"Cost: 900 blood + 40 bone + 8 soul + 40 fear"}),
+        el("div",{class:"row", style:"margin-top:10px"},[
+          el("button",{class:"btn primary", onclick:()=>doRitualEclipse(), disabled:S.territoryUnlocked},[document.createTextNode(S.territoryUnlocked ? "Village already unlocked" : "Perform Ritual of the Eclipse")])
+        ])
+      ])
+    ]);
+    main.appendChild(card);
+  }
+
+  function ingredientRow(label, id) {
+    return el("div",{class:"row", style:"justify-content:space-between;margin-top:8px"},[
+      el("div",{},[
+        el("div",{style:"font-weight:700"},[document.createTextNode(label)]),
+        el("div",{class:"muted small", html:`Have: <b>${fmt(S.ing[id])}</b>`}),
+      ]),
+      el("button",{class:"btn", onclick:()=>gatherIngredient(id)},[document.createTextNode("Gather (+)")])
+    ]);
+  }
+
+  function recipeRow(label, id, effect, costText) {
+    return el("div",{class:"card", style:"margin-top:10px"},[
+      el("div",{style:"font-weight:700"},[document.createTextNode(label)]),
+      el("div",{class:"muted small", html:effect}),
+      el("div",{class:"muted small", html:`Cost: ${costText}`}),
+      el("div",{class:"row", style:"margin-top:8px"},[
+        el("button",{class:"btn", onclick:()=>craftPotion(id)},[document.createTextNode("Craft")])
+      ])
+    ]);
+  }
+
+  function renderVillage(main) {
+    if (!S.territoryUnlocked && S.perm.startVillage===0) {
+      main.appendChild(el("div",{class:"card"},[
+        el("h3",{html:"Village Locked"}),
+        el("p",{html:"Unlock the Village by performing the Ritual of the Eclipse in the Alchemy tab."})
+      ]));
+      return;
+    }
+    const card = el("div",{class:"card"},[
+      el("h3",{html:"Village Map"}),
+      el("p",{html:"Each node can be infiltrated. Control unlocks buildings that generate passive resources but raise suspicion."}),
+      el("div",{class:"kv"},[el("span",{html:"Suspicion"}), el("b",{html:`${Math.round(S.suspicion)}%`})]),
+      el("div",{class:"kv"},[el("span",{html:"Average Control"}), el("b",{html:`${Math.round(averageControl())}%`})]),
+      el("div",{class:"kv"},[el("span",{html:"Population"}), el("b",{html:fmt(S.population)})]),
+      el("div",{class:"sep"}),
+      el("div",{class:"cols"}, Object.entries(S.nodes).map(([id,node])=>nodeCard(id,node))),
+      el("div",{class:"hint", html:`Once Suspicion rises, raids can trigger. Use <b>Mist</b> (Alchemy) and <b>Assassins</b> (Defense) to keep it under control.`})
+    ]);
+    main.appendChild(card);
+  }
+
+  function nodeCard(id, node) {
+    const name = ({
+      farm:"Farm", tavern:"Tavern", graveyard:"Graveyard", church:"Church", watch:"Watchtower"
+    })[id] || id;
+
+    const controlPct = Math.round(node.control);
+    const buildingLabel = ({
+      none:"— None —",
+      bloodfarm:"Blood Farm",
+      shrine:"Cult Shrine",
+      tavern:"Corrupted Tavern",
+      graveyard:"Graveyard Control",
+      market:"Night Market"
+    })[node.building] || "—";
+
+    const select = el("select", { style:"width:100%;margin-top:8px;padding:10px;border-radius:12px;background:rgba(0,0,0,.25);color:var(--text);border:1px solid var(--line)" });
+    [
+      ["none","— None —"],
+      ["bloodfarm","Blood Farm"],
+      ["shrine","Cult Shrine"],
+      ["tavern","Corrupted Tavern"],
+      ["graveyard","Graveyard Control"],
+      ["market","Night Market"],
+    ].forEach(([val,lab])=>{
+      const opt = document.createElement("option");
+      opt.value = val; opt.textContent = lab;
+      if (val===node.building) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.addEventListener("change", (e)=> setNodeBuilding(id, e.target.value));
+
+    return el("div",{class:"card"},[
+      el("h3",{html:`${name} <span class="muted">(Control ${controlPct}%)</span>`}),
+      el("p",{html:`Building: <b>${buildingLabel}</b>`}),
+      el("div",{class:"bar"},[ el("i",{style:`width:${controlPct}%;`}) ]),
+      el("div",{class:"row", style:"margin-top:10px"},[
+        el("button",{class:"btn", onclick:()=>controlNode(id,"quiet")},[document.createTextNode("Quiet (+8%)")]),
+        el("button",{class:"btn warn", onclick:()=>controlNode(id,"convert")},[document.createTextNode("Convert (+12%)")]),
+        el("button",{class:"btn bad", onclick:()=>controlNode(id,"massacre")},[document.createTextNode("Massacre (+16%)")]),
+      ]),
+      el("div",{class:"muted small", style:"margin-top:8px", html:"Build requires ≥ 20% control."}),
+      select
+    ]);
+  }
+
+  function renderDefense(main) {
+    const totalUnits = S.army.ghouls + S.army.beasts + S.army.knights + S.army.assassins;
+    const card = el("div",{class:"card"},[
+      el("h3",{html:"Defense & Army"}),
+      el("p",{html:"Raids trigger based on suspicion. Army auto-attacks; you can cast spells for burst or control."}),
+      el("div",{class:"kv"},[el("span",{html:"Army Units"}), el("b",{html:fmt(totalUnits)})]),
+      el("div",{class:"kv"},[el("span",{html:"DPS"}), el("b",{html:fmt(armyPower())})]),
+      el("div",{class:"sep"}),
+      el("div",{class:"cols"},[
+        el("div",{class:"card"},[
+          el("h3",{html:"Recruit Units"}),
+          el("p",{html:"Build your army to survive raids and prepare for the Legendary Hero."}),
+          unitRow("Ghouls", "ghouls", "Cheap frontline DPS", "140 blood + 10 flesh"),
+          unitRow("Night Beasts", "beasts", "High DPS, needs sludge", "220 blood + 4 sludge + 2 soul"),
+          unitRow("Vampire Knights", "knights", "Elite DPS", "320 blood + 18 bone + 3 soul"),
+          unitRow("Shadow Assassins", "assassins", "Reduces suspicion over time", "180 blood + 8 silver"),
+        ]),
+        el("div",{class:"card"},[
+          el("h3",{html:"Active Raid Actions"}),
+          el("p",{html:"Spells cost Blood/Soul. Mist Veil also helps outside raids (reduces suspicion gain)."}),
+          el("div",{class:"row"},[
+            el("button",{class:"btn", onclick:()=>castSpell("mistveil"), disabled:!S.raid},[document.createTextNode("Mist Veil (1 soul)")]),
+            el("button",{class:"btn primary", onclick:()=>castSpell("bloodspear"), disabled:!S.raid},[document.createTextNode("Blood Spear (120 blood)")]),
+            el("button",{class:"btn", onclick:()=>castSpell("charm"), disabled:!S.raid},[document.createTextNode("Charm (2 soul)")]),
+            el("button",{class:"btn", onclick:()=>castSpell("soulburn"), disabled:!S.raid},[document.createTextNode("Soulburn (2 soul)")]),
+          ]),
+          el("div",{class:"sep"}),
+          el("div",{class:"row"},[
+            el("button",{class:"btn warn", onclick:()=>startLegendaryHero()},[document.createTextNode("Challenge Legendary Hero")]),
+          ]),
+          el("div",{class:"hint", html:`Legendary unlock condition: <b>Suspicion ≥ 60%</b> and <b>Average Control ≥ 65%</b> (Phase 6).`})
+        ]),
+      ])
+    ]);
+    main.appendChild(card);
+  }
+
+  function unitRow(label, type, desc, cost) {
+    return el("div",{class:"card", style:"margin-top:10px"},[
+      el("div",{style:"font-weight:700"},[document.createTextNode(label)]),
+      el("div",{class:"muted small", html:desc}),
+      el("div",{class:"muted small", html:`Cost: ${cost}`}),
+      el("div",{class:"row", style:"margin-top:8px"},[
+        el("button",{class:"btn", onclick:()=>recruitUnit(type)},[document.createTextNode("Recruit (+1)")]),
+        el("div",{class:"muted small", html:`Have: <b>${fmt(S.army[type])}</b>`}),
+      ])
+    ]);
+  }
+
+  function renderWives(main) {
+    const card = el("div",{class:"card"},[
+      el("h3",{html:"Vampire Wives (Specialization)"}),
+      el("p",{html:"Wives are a meta-progression layer. In this prototype, you gain Wife Shards mainly by defeating the Legendary Hero."}),
+      el("div",{class:"kv"},[el("span",{html:"Wife Shards"}), el("b",{html:fmt(S.wifeShards)})]),
+      el("div",{class:"kv"},[el("span",{html:"Crimson Sigils"}), el("b",{html:fmt(S.crimsonSigils)})]),
+      el("div",{class:"sep"}),
+      el("div",{class:"cols"},[
+        wifeCard("Huntress Bride", "huntress", "Blood production & hunting power.", "Cost: 4 shards + 10 sigils", [
+          "+15% blood multiplier per level",
+          "+hunt damage",
+        ]),
+        wifeCard("Thrall Queen", "thrallqueen", "Thrall economy & capacity.", "Cost: 5 shards + 14 sigils", [
+          "+obedience baseline",
+          "+thrall capacity",
+        ]),
+        wifeCard("Alchemist Bride", "alchemist", "Better gathering & potion value.", "Cost: 5 shards + 14 sigils", [
+          "+ingredient yield",
+          "safer high heat",
+        ]),
+        wifeCard("Village Matron", "matron", "Territory expansion.", "Cost: 6 shards + 18 sigils", [
+          "future: mask mechanic",
+          "+control actions (not fully modeled)",
+        ]),
+        wifeCard("War Bride", "warbride", "Combat damage & momentum.", "Cost: 7 shards + 22 sigils", [
+          "+20% DPS per level",
+          "+blood multiplier synergy",
+        ]),
+        wifeCard("Mystic Bride", "mystic", "Soul magic scaling.", "Cost: 8 shards + 26 sigils", [
+          "+soul multiplier",
+          "future: moon cycle",
+        ]),
+      ]),
+    ]);
+    main.appendChild(card);
+  }
+
+  function wifeCard(title, id, desc, costText, bullets) {
+    const lvl = S.wives[id]||0;
+    return el("div",{class:"card"},[
+      el("h3",{html:`${title} <span class="muted">(Lv ${lvl})</span>`}),
+      el("p",{html:desc}),
+      el("div",{class:"muted small", html:costText}),
+      el("ul",{style:"margin:8px 0 0 18px;color:var(--muted);font-size:12px;line-height:1.5"}, bullets.map(b => {
+        const li = document.createElement("li"); li.textContent = b; return li;
+      })),
+      el("div",{class:"row", style:"margin-top:10px"},[
+        el("button",{class:"btn primary", onclick:()=>createWife(id)},[document.createTextNode("Create / Level Up")])
+      ])
+    ]);
+  }
+
+  function renderPrestige(main) {
+    // Summary of current run and permanent shop
+    const avg = averageControl();
+    let sigilsEst = Math.floor((S.blood/1500) + (S.soul*0.8) + (avg/18) + (S.corruption/10));
+    sigilsEst = Math.max(0, sigilsEst);
+
+    const card = el("div",{class:"card"},[
+      el("h3",{html:"Prestige"}),
+      el("p",{html:"End your run to convert progress into Crimson Sigils. Spend Sigils on permanent upgrades."}),
+      el("div",{class:"kv"},[el("span",{html:"Estimated Sigils if you prestige now"}), el("b",{html:fmt(sigilsEst)})]),
+      el("div",{class:"kv"},[el("span",{html:"Current Crimson Sigils"}), el("b",{html:fmt(S.crimsonSigils)})]),
+      el("div",{class:"sep"}),
+      el("div",{class:"row"},[
+        el("button",{class:"btn bad", onclick:()=>prestige()},[document.createTextNode("Prestige (reset run)")]),
+      ]),
+      el("div",{class:"sep"}),
+      el("h3",{html:"Permanent Upgrades"}),
+      el("p",{html:"These persist across runs. Try buying Start Thrall early to accelerate runs."}),
+      el("div",{class:"cols"},[
+        permCard("Eternal Blood", "bloodMult", `+5% blood gain permanently per level.`, () => `Cost: ${fmt(10*(1+S.perm.bloodMult))} sigils`, `Level: ${S.perm.bloodMult}`),
+        permCard("Start with Thrall", "startThrall", `Start runs with 1 thrall + 1 captive + some blood.`, () => `Cost: 25 sigils`, S.perm.startThrall ? "Purchased" : "Not owned"),
+        permCard("Start with Alchemy", "startAlchemy", `Start runs with a Library + 10 Knowledge.`, () => `Cost: 35 sigils`, S.perm.startAlchemy ? "Purchased" : "Not owned"),
+        permCard("Start with Village", "startVillage", `Start runs with Village unlocked.`, () => `Cost: 55 sigils`, S.perm.startVillage ? "Purchased" : "Not owned"),
+      ])
+    ]);
+    main.appendChild(card);
+  }
+
+  function permCard(title, id, desc, costFn, statusText) {
+    const btnDisabled = (id!=="bloodMult" && S.perm[id]) || (S.crimsonSigils < (id==="bloodMult" ? (10*(1+S.perm.bloodMult)) : id==="startThrall"?25:id==="startAlchemy"?35:55));
+    return el("div",{class:"card"},[
+      el("h3",{html:title}),
+      el("p",{html:desc}),
+      el("div",{class:"muted small", html:costFn()}),
+      el("div",{class:"muted small", html:`Status: <b>${statusText}</b>`}),
+      el("div",{class:"row", style:"margin-top:10px"},[
+        el("button",{class:"btn", onclick:()=>buyPermanent(id), disabled:btnDisabled},[document.createTextNode("Buy")])
+      ])
+    ]);
+  }
+
+  function phaseGoalText() {
+    if (S.phase === 1) return `Hunt and buy upgrades. Reach <b>60 blood</b> to unlock Thralls (Phase 2).`;
+    if (S.phase === 2) return `Build your Lair, gather Captives, and grow Thralls. Unlock Alchemy by reaching <b>10 knowledge</b> (or building a Library).`;
+    if (S.phase === 3) return `Gather ingredients and craft potions. Perform the <b>Ritual of the Eclipse</b> to unlock the Village Map (Phase 4).`;
+    if (S.phase === 4) return `Expand control across nodes. Build income engines, but manage <b>Suspicion</b>. Raids unlock Defense gameplay.`;
+    if (S.phase === 5) return `Survive raids. Recruit units and reduce suspicion with Assassins. Push to <b>Control ≥ 65%</b> and <b>Suspicion ≥ 60%</b> to challenge the Legendary Hero.`;
+    return `Challenge and defeat the <b>Legendary Hero</b> to earn Wife Shards and Sigils. Then Prestige or create a Wife specialization.`;
+  }
+
+  function renderAll(forceMain=false) {
+    updatePhase();
+    renderTabs();
+    renderTopbar();
+    renderRight();
+    renderLog();
+    if (forceMain) renderMain();
+    else renderMain(); // simplest: always render (prototype-level)
+  }
+
+  // ---------- Controls ----------
+  document.getElementById("btnSave").addEventListener("click", save);
+  document.getElementById("btnLoad").addEventListener("click", load);
+  document.getElementById("btnReset").addEventListener("click", hardReset);
+  document.getElementById("btnClearLog").addEventListener("click", () => { S.log = []; renderLog(); toast("Log cleared."); });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() === "h") {
+      hunt("rat");
+    }
+  });
+
+  // ---------- Game Loop ----------
+  function loop() {
+    const t = now();
+    const dt = clamp((t - S.lastTick)/1000, 0, 0.25);
+    S.lastTick = t;
+    tick(dt);
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- Init ----------
+  function start() {
+    addLog("New run begins in darkness...", "t");
+
+    // Quick start if perm upgrades exist in storage and user loads later; otherwise default.
+    renderAll(true);
+    requestAnimationFrame(loop);
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>

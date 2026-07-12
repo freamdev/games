@@ -1,0 +1,1940 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Party + Town/Talents Tabs (Drag Characters + Class Bonuses + Rates)</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --border:#243244;
+      --text:#e8eef7;
+      --muted:#aab6c5;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+
+      --good:#7cc4ff;
+      --bad:#ff7c7c;
+      --gold:#ffd27a;
+      --wood:#9be39b;
+
+      --panelA: rgba(16,24,35,.92);
+      --panelB: rgba(15,22,32,.92);
+      --card: rgba(255,255,255,.02);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 30% 10%, #132238 0%, var(--bg) 60%);
+      color:var(--text);
+      height:100vh;
+      overflow:hidden;
+    }
+
+    .layout{
+      display:flex;
+      height:100vh;
+      width:100vw;
+    }
+
+    /* Left tab (30%) */
+    .leftTab{
+      width:30vw;
+      min-width:360px;
+      max-width:520px;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+      border-right:1px solid var(--border);
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      box-shadow: var(--shadow);
+    }
+    .tabHeader{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:14px 14px;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panelA);
+    }
+    .headerTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .tabHeader h1{
+      font-size:14px;
+      margin:0;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      margin:0;
+      line-height:1.3;
+      text-align:right;
+    }
+
+	.timers{
+	  display:grid;
+	  grid-template-columns: repeat(3, 1fr);
+	  gap:8px;
+	}
+	.timerTop{
+	  flex-direction:column;
+	  align-items:flex-start;
+	  gap:2px;
+	}
+    .timerCard{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius:14px;
+      padding:10px 10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .timerTop b{ color:var(--text); font-weight:900; }
+    .bar{
+      height:10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      overflow:hidden;
+    }
+	/* --- Make timer text smaller (for compact / 3-up timers) --- */
+.timerTop{
+  font-size:10px;     /* was 12px */
+  line-height:1.15;
+}
+
+.timerTop b{
+  font-size:10px;     /* keep bold same size */
+  font-weight:900;
+}
+
+.timerCard{
+  padding:7px 8px;    /* slightly tighter */
+}
+
+.bar{
+  height:7px;         /* slimmer bar */
+}
+    .barFill{
+      height:100%;
+      width:0%;
+      background: rgba(124,196,255,.9);
+      transition: width .10s linear;
+    }
+    .barFill.loot{ background: rgba(255,210,122,.85); }
+    .barFill.gather{ background: rgba(155,227,155,.85); }
+
+    .rows{
+      flex:1;
+      overflow:auto;
+      padding-right:6px;
+    }
+    .rows::-webkit-scrollbar{ width:10px; }
+    .rows::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+    }
+
+    .rowCard{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(16,24,35,.9), rgba(15,22,32,.9));
+      border-radius: var(--radius);
+      padding:12px;
+      margin-bottom:12px;
+      display:grid;
+      grid-template-columns: 1fr 150px;
+      gap:12px;
+      align-items:stretch;
+    }
+    .rowLeft{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:0;
+    }
+    .rowTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .rowTitle .name{
+      font-weight:950;
+      font-size:13px;
+      color:var(--text);
+      opacity:.95;
+    }
+    .rowTitle .meta{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .bigIcons{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+    }
+
+    /* Draggable character tile */
+    .iconTile{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      border-radius:14px;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      min-height:86px;
+      user-select:none;
+      cursor: grab;
+      transition: transform .08s ease, border-color .12s ease, background .12s ease, opacity .08s ease;
+    }
+    .iconTile:hover{
+      transform: translateY(-1px);
+      border-color: rgba(124,196,255,.35);
+      background: rgba(124,196,255,.05);
+    }
+    .iconTile:active{ cursor: grabbing; }
+    .iconTile.dragging{
+      opacity:.55;
+      transform: scale(.98);
+      border-color: rgba(124,196,255,.55);
+    }
+    .iconTile.dropTarget{
+      outline: 2px dashed rgba(124,196,255,.55);
+      outline-offset: 4px;
+    }
+
+    .iconLabel{
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.6px;
+    }
+
+    /* Row right: enemy/task viz above radios */
+    .rowRight{
+      border-left:1px solid rgba(255,255,255,.08);
+      padding-left:12px;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+      gap:10px;
+    }
+    .taskViz{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius:14px;
+      padding:10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:64px;
+    }
+    .taskIcon{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+      overflow:hidden;
+    }
+    .taskText{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .taskText .top{
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.6px;
+    }
+    .taskText .main{
+      font-size:12px;
+      color:var(--text);
+      font-weight:900;
+      line-height:1.1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .radioGroup{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:auto;
+    }
+    .radioOpt{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      color:var(--text);
+    }
+    .radioOpt input{
+      transform: translateY(1px);
+      accent-color: var(--good);
+    }
+    .radioOpt input:disabled + span{
+      color: rgba(232,238,247,.35);
+    }
+
+    /* Right side shell */
+    .rightMain{
+      flex:1;
+      padding:18px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    /* Top resources always visible */
+    .rightHeader{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      padding:16px 16px;
+      background: rgba(11,15,20,.78);
+      backdrop-filter: blur(10px);
+    }
+    .rightHeader h2{
+      margin:0 0 6px 0;
+      font-size:18px;
+    }
+    .rightHeader p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.45;
+      font-size:13px;
+      max-width: 720px;
+    }
+
+    .statusPills{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-end;
+      align-items:flex-start;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+      height:fit-content;
+    }
+    .pill strong{
+      color:var(--text);
+      font-weight:950;
+      margin-left:2px;
+    }
+    .pillIcon{
+      width:16px;
+      height:16px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+
+    .pill button{
+      all:unset;
+      cursor:pointer;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color:var(--text);
+      font-weight:900;
+      margin-left:6px;
+    }
+    .pill button:hover{
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.04);
+    }
+
+    /* Content tabs */
+    .contentCard{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      background: var(--card);
+      padding:14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.18);
+    }
+    .tabBar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .tabBtns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .tabBtn{
+      all:unset;
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.20);
+      color: var(--muted);
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+      transition: border-color .12s ease, background .12s ease, transform .10s ease;
+    }
+    .tabBtn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(124,196,255,.35);
+      background: rgba(124,196,255,.06);
+      color: var(--text);
+    }
+    .tabBtn.active{
+      border-color: rgba(124,196,255,.55);
+      background: rgba(124,196,255,.10);
+      color: var(--text);
+    }
+    .tabHint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    /* Town grouped sections */
+    .groupWrap{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .groupCard{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      padding:14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.20);
+    }
+    .groupHeader{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .groupHeader h3{
+      margin:0;
+      font-size:13px;
+      letter-spacing:.4px;
+      text-transform:uppercase;
+      color: var(--text);
+    }
+    .groupHeader p{
+      margin:0;
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.35;
+      max-width: 780px;
+    }
+    .buildGrid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap:14px;
+    }
+    .building{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      padding:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .10s ease, border-color .12s ease, background .12s ease;
+      min-height:205px;
+    }
+    .building:hover{
+      transform: translateY(-2px);
+      border-color: rgba(124,196,255,.35);
+      background: linear-gradient(180deg, rgba(124,196,255,.06), rgba(255,255,255,.01));
+    }
+    .building.locked{
+      cursor:not-allowed;
+      opacity:.92;
+    }
+    .building.locked:hover{
+      transform:none;
+      border-color: rgba(255,124,124,.25);
+      background: linear-gradient(180deg, rgba(255,124,124,.04), rgba(255,255,255,.01));
+    }
+
+    .bTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .bIcon{
+      width:54px;
+      height:54px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+      overflow:hidden;
+    }
+    .bTitle{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+      flex:1;
+    }
+    .bName{
+      font-weight:950;
+      letter-spacing:.2px;
+      font-size:14px;
+      margin:0;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .bSub{
+      font-size:12px;
+      color:var(--muted);
+      margin:0;
+      line-height:1.25;
+    }
+    .bLevel{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      color:var(--text);
+      font-weight:950;
+      white-space:nowrap;
+    }
+    .bBody{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      flex:1;
+    }
+    .barWrap{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .barLabel{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .costLine{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:4px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .costPair{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .costItem{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      color: var(--text);
+      font-weight:950;
+    }
+    .costItem .sub{
+      color:var(--muted);
+      font-weight:800;
+      margin-left:2px;
+    }
+    .costItem.gold{ border-color: rgba(255,210,122,.20); }
+    .costItem.wood{ border-color: rgba(155,227,155,.20); }
+
+    .cta{
+      padding:8px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color:var(--text);
+      font-weight:950;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    /* Talents */
+    .talentWrap{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      padding:14px;
+      overflow:hidden;
+    }
+    .talentStage{
+      width:100%;
+      min-height: 560px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background: radial-gradient(900px 520px at 30% 10%, rgba(124,196,255,.07), rgba(0,0,0,.18));
+      position:relative;
+      overflow:hidden;
+    }
+    .talentStage svg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+    }
+
+    /* Toast */
+    .toast{
+      position:fixed;
+      left: calc(30vw + 18px);
+      bottom: 16px;
+      padding:10px 12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      color:var(--text);
+      font-size:12px;
+      box-shadow: var(--shadow);
+      opacity:0;
+      transform: translateY(6px);
+      transition: opacity .16s ease, transform .16s ease;
+      pointer-events:none;
+      max-width: min(620px, 60vw);
+      line-height:1.35;
+      z-index: 50;
+    }
+    .toast.show{ opacity:1; transform: translateY(0); }
+
+    /* External icon images */
+    .pixelImg{
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      object-fit: contain;
+      display:block;
+    }
+
+    /* Context sizes */
+    .iconTile .pixelImg{
+      width:46px;
+      height:46px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+      pointer-events:none; /* let drag start anywhere */
+    }
+
+    .pillIcon .pixelImg{
+      width:16px;
+      height:16px;
+      filter: none;
+    }
+
+    .bIcon .pixelImg{
+      width:36px;
+      height:36px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    }
+
+    .taskIcon .pixelImg{
+      width:30px;
+      height:30px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    }
+
+    .costItem .pixelImg{
+      width:16px;
+      height:16px;
+      filter: none;
+    }
+
+    /* Small inline icons for text + legend */
+    .inlineIcon{
+      width:14px;
+      height:14px;
+      display:inline-block;
+      vertical-align:-2px;
+      filter:none;
+    }
+
+    /* Matchup legend */
+    .matchupLegend{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+
+    .matchupPill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      color: var(--muted);
+      font-size:11px;
+      user-select:none;
+    }
+
+    .matchupPill .vs{
+      opacity:.55;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+
+    .matchupPill.active{
+      color: var(--text);
+      border-color: rgba(124,196,255,.45);
+      background: rgba(124,196,255,.08);
+      box-shadow: 0 0 0 2px rgba(124,196,255,.10) inset;
+    }
+
+    .matchupPill.active .pixelImg{
+      filter: drop-shadow(0 6px 10px rgba(124,196,255,.22));
+    }
+
+    @media (max-width: 1100px){
+      .buildGrid{ grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+    }
+    @media (max-width: 980px){
+      body{ overflow:auto; }
+      .layout{ flex-direction:column; height:auto; }
+      .leftTab{ width:100%; max-width:none; min-width:0; }
+      .toast{ left:16px; }
+      .buildGrid{ grid-template-columns: 1fr; }
+      .statusPills{ justify-content:flex-start; }
+      .rightHeader{ position: sticky; top: 0; }
+    }
+	
+	/* === COMPACT MODE === */
+.leftTab{ padding:12px; gap:10px; }
+.tabHeader{ padding:10px; gap:8px; }
+.timerCard{ padding:8px; gap:6px; }
+.bar{ height:8px; }
+
+.rowCard{
+  padding:5px;
+  margin-bottom:5px;
+  gap:10px;
+  grid-template-columns: 1fr 140px; /* slightly slimmer right */
+}
+
+.rowLeft{ gap:8px; }
+.bigIcons{ gap:8px; }
+
+.iconTile{
+  min-height:64px;           /* was 86 */
+  padding:8px;               /* was 10 */
+  gap:4px;
+  border-radius:12px;
+}
+.iconTile .pixelImg{
+  width:34px;                /* was 46 */
+  height:34px;
+}
+.iconLabel{
+  font-size:10px;            /* was 11 */
+  letter-spacing:.4px;
+}
+
+/* Kill the big task box to reclaim height (huge win) */
+.taskViz{ display:none; }
+
+/* Radios in one line instead of vertical */
+.radioGroup{
+  margin-top:0;              /* remove "push to bottom" */
+  flex-direction:row;        /* was column */
+  flex-wrap:wrap;
+  gap:8px 10px;
+}
+.radioOpt{ font-size:11px; }
+.rowRight{ gap:8px; }
+
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- LEFT -->
+    <aside class="leftTab">
+      <div class="tabHeader">
+        <div class="headerTop">
+          <div>
+            <h1 style="margin-bottom:6px;">Party</h1>
+            <div style="font-size:12px;color:var(--muted);line-height:1.25;">
+              <b>Resource bonuses:</b> Mage boosts wood, Priest boosts gold, Druid boosts both (smaller).
+            </div>
+
+            <div id="matchupLegend" class="matchupLegend" aria-label="Enemy matchup legend"></div>
+          </div>
+        </div>
+
+        <div class="timers" aria-label="Timers">
+          <div class="timerCard">
+            <div class="timerTop">
+              <span>Climb timer: <b id="climbTimerText">—</b></span>
+              <span>Now: <b id="climbTimerSec">—</b>s</span>
+            </div>
+            <div class="bar"><div id="climbBar" class="barFill"></div></div>
+          </div>
+
+          <div class="timerCard">
+            <div class="timerTop">
+              <span>Loot timer: <b id="lootTimerText">—</b></span>
+              <span>Now: <b id="lootTimerSec">—</b>s</span>
+            </div>
+            <div class="bar"><div id="lootBar" class="barFill loot"></div></div>
+          </div>
+
+          <div class="timerCard">
+            <div class="timerTop">
+              <span>Gather timer: <b id="gatherTimerText">—</b></span>
+              <span>Now: <b id="gatherTimerSec">—</b>s</span>
+            </div>
+            <div class="bar"><div id="gatherBar" class="barFill gather"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="rows" class="rows"></div>
+    </aside>
+
+    <!-- RIGHT -->
+    <main class="rightMain">
+      <div class="rightHeader">
+        <div>
+          <h2>Dashboard</h2>
+          <p>
+            Top resources stay visible. Tabs: <b>Town</b> and <b>Talents</b>.
+          </p>
+        </div>
+
+        <div class="statusPills">
+          <div class="pill" title="Highest climbed level (increases when climb timer completes)">
+            <span class="pillIcon" aria-hidden="true" id="mountainIcon"></span>
+            Highest climbed: <strong id="highestClimbed">1</strong>
+          </div>
+
+          <div class="pill" title="Gold (shows next loot payout)">
+            <span class="pillIcon" aria-hidden="true" id="goldIcon"></span>
+            <strong id="goldVal">0</strong>
+          </div>
+
+          <div class="pill" title="Wood (shows next gather payout)">
+            <span class="pillIcon" aria-hidden="true" id="woodIcon"></span>
+            <strong id="woodVal">0</strong>
+          </div>
+
+          <div class="pill">
+            Total building levels: <strong id="totalLevels">—</strong>
+            <button id="resetBtn" type="button" title="Reset all buildings/resources/timers">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="contentCard" aria-label="Content tabs">
+        <div class="tabBar">
+          <div class="tabBtns" role="tablist" aria-label="Town and Talents tabs">
+            <button class="tabBtn active" id="tabTownBtn" role="tab" aria-selected="true" aria-controls="tabTown" tabindex="0">Town</button>
+            <button class="tabBtn" id="tabTalentsBtn" role="tab" aria-selected="false" aria-controls="tabTalents" tabindex="-1">Talents</button>
+          </div>
+          <div class="tabHint" id="tabHint">Town: upgrade buildings • Talents: static skill tree</div>
+        </div>
+
+        <div id="tabTown" role="tabpanel" aria-labelledby="tabTownBtn">
+          <div id="buildGroups" class="groupWrap" aria-label="Buildings grouped by category"></div>
+        </div>
+
+        <div id="tabTalents" role="tabpanel" aria-labelledby="tabTalentsBtn" hidden>
+          <div class="talentWrap">
+            <div class="talentStage" aria-label="Static skill tree">
+              <svg id="talentSvg" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ============================================================
+    // ICON PATHS (put the files in /icons next to this html)
+    // ============================================================
+    const ICON_PATHS = {
+      resources: {
+        gold: "icons/gold.png",
+        wood: "icons/wood.png",
+        mountain: "icons/mountain.png",
+      },
+      classes: {
+        warrior: "icons/classes/warrior.png",
+        hunter:  "icons/classes/hunter.png",
+        mage:    "icons/classes/mage.png",
+        priest:  "icons/classes/priest.png",
+        druid:   "icons/classes/druid.png",
+      },
+      enemies: {
+        undead: "icons/enemies/undead.png",
+        goblin: "icons/enemies/goblin.png",
+        spider: "icons/enemies/spider.png",
+        orc:    "icons/enemies/orc.png",
+      },
+      buildings: {
+        "Guild Hall": "icons/buildings/guild-hall.png",
+        "Smithy": "icons/buildings/smithy.png",
+        "Druid Circle": "icons/buildings/druid-circle.png",
+        "Tavern": "icons/buildings/tavern.png",
+        "Alchemist": "icons/buildings/alchemist.png",
+        "Armor Crafter": "icons/buildings/armor-crafter.png",
+        "Mage Guild": "icons/buildings/mage-guild.png",
+      }
+    };
+
+    function imgTag(src, alt = ""){
+      if(!src) return "";
+      return `<img class="pixelImg" src="${src}" alt="${alt}" onerror="this.style.display='none'">`;
+    }
+
+    // ============================================================
+    // ENEMIES
+    // ============================================================
+    const ENEMIES = {
+      undead: { name: "Undead" },
+      goblin: { name: "Goblin" },
+      spider: { name: "Cave Spider" },
+      orc:    { name: "Orc Raider" },
+    };
+    const ENEMY_KEYS = Object.keys(ENEMIES);
+    function randEnemyKey(){
+      return ENEMY_KEYS[Math.floor(Math.random() * ENEMY_KEYS.length)];
+    }
+
+    // ============================================================
+    // DOM REFS
+    // ============================================================
+    const rowsEl = document.getElementById("rows");
+    const buildGroupsEl = document.getElementById("buildGroups");
+    const totalLevelsEl = document.getElementById("totalLevels");
+    const resetBtn = document.getElementById("resetBtn");
+    const toastEl = document.getElementById("toast");
+    const highestClimbedEl = document.getElementById("highestClimbed");
+    const goldValEl = document.getElementById("goldVal");
+    const woodValEl = document.getElementById("woodVal");
+
+    const climbBarEl = document.getElementById("climbBar");
+    const lootBarEl = document.getElementById("lootBar");
+    const gatherBarEl = document.getElementById("gatherBar");
+
+    const climbTimerTextEl = document.getElementById("climbTimerText");
+    const lootTimerTextEl = document.getElementById("lootTimerText");
+    const gatherTimerTextEl = document.getElementById("gatherTimerText");
+    const climbTimerSecEl = document.getElementById("climbTimerSec");
+    const lootTimerSecEl = document.getElementById("lootTimerSec");
+    const gatherTimerSecEl = document.getElementById("gatherTimerSec");
+
+    const tabTownBtn = document.getElementById("tabTownBtn");
+    const tabTalentsBtn = document.getElementById("tabTalentsBtn");
+    const tabTown = document.getElementById("tabTown");
+    const tabTalents = document.getElementById("tabTalents");
+    const tabHint = document.getElementById("tabHint");
+
+    document.getElementById("goldIcon").innerHTML = imgTag(ICON_PATHS.resources.gold, "Gold");
+    document.getElementById("woodIcon").innerHTML = imgTag(ICON_PATHS.resources.wood, "Wood");
+    document.getElementById("mountainIcon").innerHTML = imgTag(ICON_PATHS.resources.mountain, "Mountain");
+
+    // ============================================================
+    // UTIL
+    // ============================================================
+    function showToast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toastEl.classList.remove("show"), 1700);
+    }
+    function clampInt(n, min, max){
+      n = Math.round(Number(n) || 0);
+      if(n < min) n = min;
+      if(n > max) n = max;
+      return n;
+    }
+
+    function renderMatchupLegend(){
+      const el = document.getElementById("matchupLegend");
+      if(!el) return;
+
+      const matchups = [
+        { enemy:"undead", classKey:"priest", label:"Priest vs Undead" },
+        { enemy:"orc",    classKey:"warrior",label:"Warrior vs Orc" },
+        { enemy:"goblin", classKey:"hunter", label:"Hunter vs Goblin" },
+        { enemy:"spider", classKey:"druid",  label:"Druid vs Spider" },
+      ];
+
+      const curEnemy = state.currentEnemy;
+
+      const pills = matchups.map(m => {
+        const isActive = (m.enemy === curEnemy);
+        const clsIcon = ICON_PATHS.classes[m.classKey];
+        const enemyIcon = ICON_PATHS.enemies[m.enemy];
+
+        return `
+          <span class="matchupPill ${isActive ? "active" : ""}" title="${m.label} (−5s each)">
+            <img class="pixelImg inlineIcon" src="${clsIcon}" alt="${m.classKey}">
+            <span class="vs">vs</span>
+            <img class="pixelImg inlineIcon" src="${enemyIcon}" alt="${m.enemy}">
+            <span class="vs">−5s</span>
+          </span>
+        `;
+      }).join("");
+
+      const magePill = `
+        <span class="matchupPill active" title="Mage works vs any enemy (−5s each)">
+          <img class="pixelImg inlineIcon" src="${ICON_PATHS.classes.mage}" alt="mage">
+          <span class="vs">vs</span>
+          <img class="pixelImg inlineIcon" src="${ICON_PATHS.resources.mountain}" alt="any">
+          <span class="vs">ANY</span>
+          <span class="vs">−5s</span>
+        </span>
+      `;
+
+      el.innerHTML = pills + magePill;
+    }
+
+    // ============================================================
+    // PARTY: CLASSES / ACTIONS / DRAG CHARACTERS
+    // (GEAR REMOVED)
+    // ============================================================
+    const CLASS_KEYS = Object.keys(ICON_PATHS.classes);
+    function randClass(){
+      return CLASS_KEYS[Math.floor(Math.random() * CLASS_KEYS.length)];
+    }
+
+    function countClasses(arr){
+      const out = { warrior:0, hunter:0, mage:0, priest:0, druid:0 };
+      for(const c of (arr || [])){
+        if(out[c] !== undefined) out[c] += 1;
+      }
+      return out;
+    }
+
+    function radioOpt(rowIndex, label, current){
+      const value = label.toLowerCase();
+      const name = `row-${rowIndex}-action`;
+      const id = `${name}-${value}`;
+      const checked = (current === value) ? "checked" : "";
+      return `
+        <label class="radioOpt" for="${id}">
+          <input id="${id}" type="radio" name="${name}" value="${value}" ${checked}/>
+          <span>${label}</span>
+        </label>
+      `;
+    }
+
+    // ============================================================
+    // BUILDINGS + GROUPING
+    // ============================================================
+    const BUILDINGS = [
+      { key:"guildHall",    name:"Guild Hall",    desc:"Boost loot/gather gains (town management)." },
+      { key:"smithy",       name:"Smithy",       desc:"Speeds up climbing (tools & gear)." },
+      { key:"druidCircle",  name:"Druid Circle", desc:"Speeds up gathering timer (nature rites)." },
+      { key:"tavern",       name:"Tavern",       desc:"Boost loot/gather gains (morale & rumors)." },
+      { key:"alchemist",    name:"Alchemist",    desc:"Speeds up climbing (potions & stamina)." },
+      { key:"armorCrafter", name:"Armor Crafter",desc:"Speeds up climbing (protection & prep)." },
+      { key:"mageGuild",    name:"Mage Guild",   desc:"Speeds up looting timer (arcane scouting)." },
+    ];
+    const BUILD_BY_KEY = Object.fromEntries(BUILDINGS.map(b => [b.key, b]));
+
+    const BUILD_GROUPS = [
+      { id: "climbSpeed", title: "Climb speed", hint: "Upgrades here reduce the climb timer.", keys: ["smithy", "alchemist", "armorCrafter"] },
+      { id: "gains", title: "Loot & gather gains", hint: "Upgrades here increase gold/wood payouts.", keys: ["guildHall", "tavern"] },
+      { id: "lootSpeed", title: "Faster looting", hint: "Upgrades here reduce the loot timer.", keys: ["mageGuild"] },
+      { id: "gatherSpeed", title: "Faster gathering", hint: "Upgrades here reduce the gather timer.", keys: ["druidCircle"] }
+    ];
+
+    const MAX_LEVEL = 12;
+
+    const COST_MODELS = {
+      guildHall:    { goldBase:120, goldPow:1.35, goldMul:22,  woodBase:80,  woodPow:1.25, woodMul:18 },
+      smithy:       { goldBase:90,  goldPow:1.28, goldMul:18,  woodBase:110, woodPow:1.32, woodMul:22 },
+      druidCircle:  { goldBase:70,  goldPow:1.22, goldMul:14,  woodBase:140, woodPow:1.40, woodMul:26 },
+      tavern:       { goldBase:140, goldPow:1.30, goldMul:24,  woodBase:60,  woodPow:1.18, woodMul:12 },
+      alchemist:    { goldBase:160, goldPow:1.42, goldMul:28,  woodBase:50,  woodPow:1.20, woodMul:10 },
+      armorCrafter: { goldBase:110, goldPow:1.34, goldMul:20,  woodBase:95,  woodPow:1.28, woodMul:18 },
+      mageGuild:    { goldBase:180, goldPow:1.46, goldMul:30,  woodBase:70,  woodPow:1.24, woodMul:14 },
+    };
+
+    function nextUpgradeCost(buildingKey, currentLevel){
+      const m = COST_MODELS[buildingKey];
+      const next = currentLevel + 1;
+      const gold = Math.round(m.goldBase + m.goldMul * Math.pow(next, m.goldPow));
+      const wood = Math.round(m.woodBase + m.woodMul * Math.pow(next, m.woodPow));
+      return { gold, wood };
+    }
+
+    // ============================================================
+    // STATE
+    // NOTE: Using a new key so old gear-based saves don't collide.
+    // ============================================================
+    const STORE_KEY = "party_town_tabs_drag_characters_bonuses_rates_no_gear_v1";
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORE_KEY);
+        if(!raw) return null;
+        const obj = JSON.parse(raw);
+        if(typeof obj !== "object" || !obj) return null;
+        return obj;
+      }catch{
+        return null;
+      }
+    }
+    function saveState(){
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
+    function defaultPartyRows(){
+      return Array.from({length:5}).map(() => ({
+        classes: [randClass(), randClass(), randClass()],
+        action: "loot"
+      }));
+    }
+
+    function defaultState(){
+      const levels = {};
+      for(const b of BUILDINGS) levels[b.key] = 1;
+      return {
+        buildings: levels,
+        highestClimbed: 1,
+        resources: { gold: 0, wood: 0 },
+        timers: { climbElapsed: 0, lootElapsed: 0, gatherElapsed: 0 },
+        lastFrameMs: Date.now(),
+        activeRightTab: "town",
+        currentEnemy: randEnemyKey(),
+        partyRows: defaultPartyRows()
+      };
+    }
+
+    let state = loadState() || defaultState();
+
+    // normalize/repair
+    if(!state.buildings) state.buildings = defaultState().buildings;
+    if(!state.resources) state.resources = { gold:0, wood:0 };
+    if(!state.timers) state.timers = { climbElapsed:0, lootElapsed:0, gatherElapsed:0 };
+    if(state.activeRightTab !== "town" && state.activeRightTab !== "talents") state.activeRightTab = "town";
+    if(!state.currentEnemy || !ENEMIES[state.currentEnemy]) state.currentEnemy = randEnemyKey();
+
+    if(!Array.isArray(state.partyRows) || state.partyRows.length !== 5){
+      state.partyRows = defaultPartyRows();
+    } else {
+      state.partyRows = state.partyRows.map(r => ({
+        classes: Array.isArray(r.classes) && r.classes.length === 3 ? r.classes : [randClass(), randClass(), randClass()],
+        action: (r.action === "climb" || r.action === "loot" || r.action === "gather") ? r.action : "loot"
+      }));
+    }
+
+    for(const b of BUILDINGS){
+      if(typeof state.buildings[b.key] !== "number") state.buildings[b.key] = 1;
+      state.buildings[b.key] = clampInt(state.buildings[b.key], 1, MAX_LEVEL);
+    }
+    state.highestClimbed = clampInt(state.highestClimbed, 1, 999999999);
+    state.resources.gold = clampInt(state.resources.gold, 0, 999999999);
+    state.resources.wood = clampInt(state.resources.wood, 0, 999999999);
+    state.timers.climbElapsed = clampInt(state.timers.climbElapsed, 0, 10_000_000);
+    state.timers.lootElapsed = clampInt(state.timers.lootElapsed, 0, 10_000_000);
+    state.timers.gatherElapsed = clampInt(state.timers.gatherElapsed, 0, 10_000_000);
+    state.lastFrameMs = Number(state.lastFrameMs || Date.now());
+
+    saveState();
+
+    // ============================================================
+    // SINGLE CLIMB
+    // ============================================================
+    function getSelectedClimbRow(){
+      const idx = state.partyRows.findIndex(r => r.action === "climb");
+      return (idx >= 0) ? String(idx) : null;
+    }
+    function enforceSingleClimb(){
+      let first = -1;
+      for(let i=0;i<state.partyRows.length;i++){
+        if(state.partyRows[i].action === "climb"){
+          if(first === -1) first = i;
+          else state.partyRows[i].action = "loot";
+        }
+      }
+      saveState();
+    }
+
+    // ============================================================
+    // CLASS SPEED BONUSES
+    // Warrior/Hunter: each reduces timer by 1 second for the activity they're assigned to
+    // ============================================================
+    const BASE = { climbSec: 120, lootSec: 15, gatherSec: 15 };
+
+    function activitySpeedBonusCounts(){
+      const bonus = { climb:0, loot:0, gather:0 };
+
+      for(const r of state.partyRows){
+        const a = r.action || "loot";
+        if(a !== "loot" && a !== "gather") continue; // no climb here
+        const c = countClasses(r.classes);
+        bonus[a] += (c.warrior + c.hunter);
+      }
+
+      return bonus;
+    }
+
+    function climbEnemyReductionSeconds(){
+      const climbRowIdx = state.partyRows.findIndex(r => r.action === "climb");
+      if(climbRowIdx < 0) return 0;
+
+      const enemy = state.currentEnemy;
+      const c = countClasses(state.partyRows[climbRowIdx].classes);
+
+      const matchByEnemy = {
+        undead: "priest",
+        orc: "warrior",
+        goblin: "hunter",
+        spider: "druid",
+      };
+
+      const matchClass = matchByEnemy[enemy] || null;
+      const matches = (matchClass ? (c[matchClass] || 0) : 0) + (c.mage || 0); // mage always counts
+      return matches * 20;
+    }
+
+    function derivedEffects(){
+      const lv = (k) => clampInt(state.buildings[k], 1, MAX_LEVEL);
+
+      const climbSpeedLv = (lv("smithy") - 1) + (lv("alchemist") - 1) + (lv("armorCrafter") - 1);
+      const climbFromBuildings = Math.max(5, BASE.climbSec - climbSpeedLv);
+
+      const gatherSpeedLv = (lv("druidCircle") - 1);
+      const gatherFromBuildings = Math.max(5, BASE.gatherSec - gatherSpeedLv);
+
+      const lootSpeedLv = (lv("mageGuild") - 1);
+      const lootFromBuildings = Math.max(5, BASE.lootSec - lootSpeedLv);
+
+      const tavernMult = 1 + 0.05 * (lv("tavern") - 1);
+      const guildMult  = 1 + 0.05 * (lv("guildHall") - 1);
+      const gainMult = tavernMult * guildMult;
+
+      const speedBonus = activitySpeedBonusCounts();
+      const climbSec = Math.max(5, climbFromBuildings - climbEnemyReductionSeconds());
+      const lootSec = Math.max(5, lootFromBuildings - speedBonus.loot);
+      const gatherSec = Math.max(5, gatherFromBuildings - speedBonus.gather);
+
+      return { climbSec, lootSec, gatherSec, gainMult };
+    }
+
+    function updateDerivedTimersAndGainsUI(){
+      const eff = derivedEffects();
+      climbTimerTextEl.textContent = `Climb every ${eff.climbSec}s`;
+      lootTimerTextEl.textContent = `Loot every ${eff.lootSec}s`;
+      gatherTimerTextEl.textContent = `Gather every ${eff.gatherSec}s`;
+      climbTimerSecEl.textContent = String(eff.climbSec);
+      lootTimerSecEl.textContent = String(eff.lootSec);
+      gatherTimerSecEl.textContent = String(eff.gatherSec);
+    }
+
+    // ============================================================
+    // PAYOUT BONUSES
+    // Mage: +wood on gather
+    // Priest: +gold on loot
+    // Druid: +both smaller
+    // ============================================================
+    const PAYOUT_BONUS = {
+      mageGather: 0.20,
+      priestLoot: 0.20,
+      druidBoth: 0.12
+    };
+
+    function rowPayoutMultiplierFor(action, row){
+      const c = countClasses(row.classes);
+      if(action === "gather"){
+        return 1 + (c.mage * PAYOUT_BONUS.mageGather) + (c.druid * PAYOUT_BONUS.druidBoth);
+      }
+      if(action === "loot"){
+        return 1 + (c.priest * PAYOUT_BONUS.priestLoot) + (c.druid * PAYOUT_BONUS.druidBoth);
+      }
+      return 1;
+    }
+
+    function predictNextLootPayout(){
+      const eff = derivedEffects();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+      const basePerGroup = lvlFactor * 10;
+
+      let total = 0;
+      for(const r of state.partyRows){
+        if(r.action !== "loot") continue;
+        total += basePerGroup * rowPayoutMultiplierFor("loot", r);
+      }
+      total = Math.round(total * eff.gainMult);
+      return total;
+    }
+
+    function predictNextGatherPayout(){
+      const eff = derivedEffects();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+      const basePerGroup = lvlFactor * 5;
+
+      let total = 0;
+      for(const r of state.partyRows){
+        if(r.action !== "gather") continue;
+        total += basePerGroup * rowPayoutMultiplierFor("gather", r);
+      }
+      total = Math.round(total * eff.gainMult);
+      return total;
+    }
+
+    function updateResourceUI(){
+      highestClimbedEl.textContent = String(state.highestClimbed);
+      const nextGold = predictNextLootPayout();
+      const nextWood = predictNextGatherPayout();
+      goldValEl.textContent = `${state.resources.gold} (+${nextGold})`;
+      woodValEl.textContent = `${state.resources.wood} (+${nextWood})`;
+    }
+
+    function canAfford(cost){
+      return state.resources.gold >= cost.gold && state.resources.wood >= cost.wood;
+    }
+    function spend(cost){
+      state.resources.gold -= cost.gold;
+      state.resources.wood -= cost.wood;
+      if(state.resources.gold < 0) state.resources.gold = 0;
+      if(state.resources.wood < 0) state.resources.wood = 0;
+    }
+
+    function payoutLootOnce(){
+      const eff = derivedEffects();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+      const basePerGroup = lvlFactor * 10;
+
+      let totalGold = 0;
+      for(const r of state.partyRows){
+        if(r.action !== "loot") continue;
+        totalGold += basePerGroup * rowPayoutMultiplierFor("loot", r);
+      }
+      totalGold = Math.round(totalGold * eff.gainMult);
+      if(totalGold <= 0) return 0;
+
+      state.resources.gold = clampInt(state.resources.gold + totalGold, 0, 999999999);
+      return totalGold;
+    }
+
+    function payoutGatherOnce(){
+      const eff = derivedEffects();
+      const lvlFactor = Math.max(1, state.highestClimbed - 1);
+      const basePerGroup = lvlFactor * 5;
+
+      let totalWood = 0;
+      for(const r of state.partyRows){
+        if(r.action !== "gather") continue;
+        totalWood += basePerGroup * rowPayoutMultiplierFor("gather", r);
+      }
+      totalWood = Math.round(totalWood * eff.gainMult);
+      if(totalWood <= 0) return 0;
+
+      state.resources.wood = clampInt(state.resources.wood + totalWood, 0, 999999999);
+      return totalWood;
+    }
+
+    function doClimb(){
+      const climbRow = getSelectedClimbRow();
+      if(climbRow === null) return false;
+      state.highestClimbed = clampInt(state.highestClimbed + 1, 1, 999999999);
+      return true;
+    }
+
+    // ============================================================
+    // ROW BADGES
+    // ============================================================
+    function updateRowBadges(){
+      const climbRow = getSelectedClimbRow();
+      rowsEl.querySelectorAll(".rowCard").forEach(card => {
+        const rowId = card.dataset.row;
+        const idx = Number(rowId);
+        const action = state.partyRows[idx]?.action || "loot";
+
+        const iconEl = card.querySelector(".taskIcon");
+        const topEl  = card.querySelector(".taskText .top");
+        const mainEl = card.querySelector(".taskText .main");
+
+        if(!iconEl || !topEl || !mainEl) return;
+
+        if(action === "climb" && climbRow !== null && rowId === climbRow){
+          const e = ENEMIES[state.currentEnemy] || ENEMIES[randEnemyKey()];
+          iconEl.innerHTML = imgTag(ICON_PATHS.enemies[state.currentEnemy], e.name);
+          topEl.textContent = "Fighting";
+          mainEl.textContent = e.name;
+        } else if(action === "loot"){
+          iconEl.innerHTML = imgTag(ICON_PATHS.resources.gold, "Gold");
+          topEl.textContent = "Looting";
+          mainEl.textContent = "Searching for gold";
+        } else if(action === "gather"){
+          iconEl.innerHTML = imgTag(ICON_PATHS.resources.wood, "Wood");
+          topEl.textContent = "Gathering";
+          mainEl.textContent = "Collecting wood";
+        } else {
+          iconEl.innerHTML = imgTag(ICON_PATHS.resources.mountain, "Mountain");
+          topEl.textContent = "Idle";
+          mainEl.textContent = "—";
+        }
+
+        const climbExists = (climbRow !== null);
+        const climbInput = card.querySelector('input[type="radio"][value="climb"]');
+        if(climbInput){
+          climbInput.disabled = climbExists && (rowId !== climbRow);
+        }
+      });
+    }
+
+    // ============================================================
+    // DRAG & DROP CHARACTERS (swap one tile with another tile)
+    // ============================================================
+    let dragChar = null; // { row: number, slot: number }
+
+    function swapCharacters(a, b){
+      if(!a || !b) return;
+      if(a.row === b.row && a.slot === b.slot) return;
+
+      const ra = state.partyRows[a.row];
+      const rb = state.partyRows[b.row];
+      if(!ra || !rb) return;
+
+      const tmp = ra.classes[a.slot];
+      ra.classes[a.slot] = rb.classes[b.slot];
+      rb.classes[b.slot] = tmp;
+
+      saveState();
+
+      updateDerivedTimersAndGainsUI();
+      updateResourceUI();
+      updateRowBadges();
+
+      showToast(`Swapped ${ra.classes[a.slot]} ↔ ${rb.classes[b.slot]}.`);
+    }
+
+    function attachCharacterDnDHandlers(tileEl){
+      tileEl.addEventListener("dragstart", (e) => {
+        const row = Number(tileEl.dataset.row);
+        const slot = Number(tileEl.dataset.slot);
+        dragChar = { row, slot };
+        tileEl.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", JSON.stringify(dragChar));
+      });
+
+      tileEl.addEventListener("dragend", () => {
+        dragChar = null;
+        rowsEl.querySelectorAll(".iconTile").forEach(t => t.classList.remove("dragging","dropTarget"));
+      });
+
+      tileEl.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        tileEl.classList.add("dropTarget");
+      });
+
+      tileEl.addEventListener("dragleave", () => tileEl.classList.remove("dropTarget"));
+
+      tileEl.addEventListener("drop", (e) => {
+        e.preventDefault();
+        tileEl.classList.remove("dropTarget");
+
+        let src = dragChar;
+        if(!src){
+          try{ src = JSON.parse(e.dataTransfer.getData("text/plain")); }catch{}
+        }
+        const dst = { row: Number(tileEl.dataset.row), slot: Number(tileEl.dataset.slot) };
+        swapCharacters(src, dst);
+
+        renderRows();
+      });
+    }
+
+    // ============================================================
+    // RENDER PARTY ROWS (GEAR REMOVED)
+    // ============================================================
+    function renderRows(){
+      rowsEl.innerHTML = "";
+
+      for(let i=0;i<state.partyRows.length;i++){
+        const rowData = state.partyRows[i];
+        const row = document.createElement("div");
+        row.className = "rowCard";
+        row.dataset.row = String(i);
+
+        row.innerHTML = `
+          <div class="rowLeft">
+            <div class="rowTitle">
+              <div class="name">Row ${i + 1}</div>
+              <div class="meta">3 classes</div>
+            </div>
+
+            <div class="bigIcons">
+              ${rowData.classes.map((cls, slot) => `
+                <div class="iconTile" draggable="true" data-row="${i}" data-slot="${slot}" data-class="${cls}" title="Drag to swap">
+                  ${imgTag(ICON_PATHS.classes[cls], cls)}
+                  <div class="iconLabel">${cls}</div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+
+          <div class="rowRight">
+            <div class="taskViz" aria-label="Current activity for row ${i+1}">
+              <div class="taskIcon" aria-hidden="true"></div>
+              <div class="taskText">
+                <div class="top">Status</div>
+                <div class="main">—</div>
+              </div>
+            </div>
+
+            <div class="radioGroup" aria-label="Action selection for row ${i+1}">
+              ${radioOpt(i, "Climb", rowData.action)}
+              ${radioOpt(i, "Loot", rowData.action)}
+              ${radioOpt(i, "Gather", rowData.action)}
+            </div>
+          </div>
+        `;
+
+        row.querySelectorAll(".iconTile").forEach(tile => attachCharacterDnDHandlers(tile));
+
+        row.querySelectorAll('input[type="radio"]').forEach(r => {
+          r.addEventListener("change", () => {
+            state.partyRows[i].action = r.value;
+            enforceSingleClimb();
+            saveState();
+            updateDerivedTimersAndGainsUI();
+            updateRowBadges();
+            updateResourceUI();
+          });
+        });
+
+        rowsEl.appendChild(row);
+      }
+
+      updateRowBadges();
+    }
+
+    // ============================================================
+    // RIGHT TABS
+    // ============================================================
+    function setActiveTab(tabName){
+      const isTown = tabName === "town";
+
+      tabTownBtn.classList.toggle("active", isTown);
+      tabTalentsBtn.classList.toggle("active", !isTown);
+
+      tabTownBtn.setAttribute("aria-selected", String(isTown));
+      tabTalentsBtn.setAttribute("aria-selected", String(!isTown));
+
+      tabTownBtn.tabIndex = isTown ? 0 : -1;
+      tabTalentsBtn.tabIndex = !isTown ? 0 : -1;
+
+      tabTown.hidden = !isTown;
+      tabTalents.hidden = isTown;
+
+      tabHint.textContent = isTown
+        ? "Town: upgrade buildings • timers & gains affected by levels + party"
+        : "Talents: static skill tree (visual only)";
+
+      state.activeRightTab = tabName;
+      saveState();
+    }
+
+    tabTownBtn.addEventListener("click", () => setActiveTab("town"));
+    tabTalentsBtn.addEventListener("click", () => setActiveTab("talents"));
+    [tabTownBtn, tabTalentsBtn].forEach(btn => {
+      btn.addEventListener("keydown", (e) => {
+        if(e.key === "ArrowRight" || e.key === "ArrowLeft"){
+          e.preventDefault();
+          const next = (btn === tabTownBtn) ? "talents" : "town";
+          setActiveTab(next);
+          (btn === tabTownBtn ? tabTalentsBtn : tabTownBtn).focus();
+        }
+      });
+    });
+
+    // ============================================================
+    // BUILDINGS RENDER (GROUPED)
+    // ============================================================
+    function levelProgressPercent(lv){
+      return Math.round(((lv - 1) / (MAX_LEVEL - 1)) * 100);
+    }
+
+    function makeBuildingCard(b){
+      const lv = clampInt(state.buildings[b.key], 1, MAX_LEVEL);
+
+      const pct = levelProgressPercent(lv);
+      const isMax = lv >= MAX_LEVEL;
+      const cost = isMax ? null : nextUpgradeCost(b.key, lv);
+      const affordable = cost ? canAfford(cost) : true;
+
+      const card = document.createElement("div");
+      card.className = "building" + ((!affordable && !isMax) ? " locked" : "");
+      card.dataset.key = b.key;
+      card.setAttribute("role","button");
+      card.setAttribute("tabindex","0");
+
+      const costHtml = isMax ? `
+        <div class="costLine">
+          <span>Max level reached</span>
+          <span class="cta">Max</span>
+        </div>
+      ` : `
+        <div class="costLine">
+          <div class="costPair">
+            <span class="costItem gold">${imgTag(ICON_PATHS.resources.gold, "Gold")}${cost.gold}<span class="sub">g</span></span>
+            <span class="costItem wood">${imgTag(ICON_PATHS.resources.wood, "Wood")}${cost.wood}<span class="sub">w</span></span>
+          </div>
+          <span class="cta">${affordable ? "Click to upgrade" : "Not enough"}</span>
+        </div>
+      `;
+
+      card.innerHTML = `
+        <div class="bTop">
+          <div class="bIcon" aria-hidden="true">${imgTag(ICON_PATHS.buildings[b.name], b.name)}</div>
+          <div class="bTitle">
+            <p class="bName">${b.name}</p>
+            <p class="bSub">${b.desc}</p>
+          </div>
+          <div class="bLevel">Lvl ${lv}</div>
+        </div>
+
+        <div class="bBody">
+          <div class="barWrap">
+            <div class="barLabel"><span>Progress</span><span>${pct}%</span></div>
+            <div class="bar"><div class="barFill" style="width:${pct}%"></div></div>
+          </div>
+          ${costHtml}
+        </div>
+      `;
+
+      const doUpgrade = () => {
+        const cur = clampInt(state.buildings[b.key], 1, MAX_LEVEL);
+        if(cur >= MAX_LEVEL){ showToast(`${b.name} is max (${MAX_LEVEL}).`); return; }
+        const c = nextUpgradeCost(b.key, cur);
+        if(!canAfford(c)){ showToast(`Need ${c.gold}g and ${c.wood}w for ${b.name}.`); return; }
+
+        spend(c);
+        state.buildings[b.key] = cur + 1;
+
+        const eff = derivedEffects();
+        state.timers.climbElapsed = Math.min(state.timers.climbElapsed, eff.climbSec * 1000 - 1);
+        state.timers.lootElapsed = Math.min(state.timers.lootElapsed, eff.lootSec * 1000 - 1);
+        state.timers.gatherElapsed = Math.min(state.timers.gatherElapsed, eff.gatherSec * 1000 - 1);
+
+        saveState();
+        updateResourceUI();
+        updateDerivedTimersAndGainsUI();
+        renderBuildings();
+        showToast(`${b.name} upgraded to Lvl ${state.buildings[b.key]}! (-${c.gold}g, -${c.wood}w)`);
+      };
+
+      card.addEventListener("click", doUpgrade);
+      card.addEventListener("keydown", (e) => {
+        if(e.key === "Enter" || e.key === " "){
+          e.preventDefault();
+          doUpgrade();
+        }
+      });
+
+      return card;
+    }
+
+    function renderBuildings(){
+      buildGroupsEl.innerHTML = "";
+
+      let total = 0;
+      for(const b of BUILDINGS) total += clampInt(state.buildings[b.key], 1, MAX_LEVEL);
+      totalLevelsEl.textContent = String(total);
+
+      for(const group of BUILD_GROUPS){
+        const wrapper = document.createElement("div");
+        wrapper.className = "groupCard";
+
+        wrapper.innerHTML = `
+          <div class="groupHeader">
+            <h3>${group.title}</h3>
+            <p>${group.hint}</p>
+          </div>
+          <div class="buildGrid" data-group="${group.id}"></div>
+        `;
+
+        const grid = wrapper.querySelector(".buildGrid");
+        for(const key of group.keys){
+          const b = BUILD_BY_KEY[key];
+          if(!b) continue;
+          grid.appendChild(makeBuildingCard(b));
+        }
+
+        buildGroupsEl.appendChild(wrapper);
+      }
+    }
+
+    // ============================================================
+    // TALENTS (STATIC TREE)
+    // ============================================================
+    function renderTalentTree(){
+      const svg = document.getElementById("talentSvg");
+
+      const nodes = [
+        { id:"n1", x:140, y:90 },
+        { id:"n2", x:500, y:90 },
+        { id:"n3", x:860, y:90 },
+        { id:"n4", x:250, y:210 },
+        { id:"n5", x:500, y:230 },
+        { id:"n6", x:750, y:210 },
+        { id:"n7", x:170, y:360 },
+        { id:"n8", x:500, y:360 },
+        { id:"n9", x:830, y:360 },
+        { id:"n10", x:320, y:500 },
+        { id:"n11", x:680, y:500 },
+      ];
+
+      const edges = [
+        ["n1","n4"], ["n2","n5"], ["n3","n6"],
+        ["n4","n7"], ["n4","n8"],
+        ["n5","n8"],
+        ["n6","n8"], ["n6","n9"],
+        ["n7","n10"], ["n8","n10"], ["n8","n11"], ["n9","n11"]
+      ];
+
+      const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
+
+      function edgePath(a, b){
+        const ax = a.x, ay = a.y;
+        const bx = b.x, by = b.y;
+        const midY = (ay + by) / 2;
+        return `M ${ax} ${ay} C ${ax} ${midY}, ${bx} ${midY}, ${bx} ${by}`;
+      }
+
+      const bg = `
+        <defs>
+          <radialGradient id="glow" cx="50%" cy="35%" r="70%">
+            <stop offset="0%" stop-color="rgba(124,196,255,0.30)"/>
+            <stop offset="55%" stop-color="rgba(124,196,255,0.08)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+          </radialGradient>
+
+          <linearGradient id="edgeGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="rgba(124,196,255,0.55)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0.10)"/>
+          </linearGradient>
+
+          <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="rgba(0,0,0,.55)"/>
+          </filter>
+        </defs>
+
+        <rect x="0" y="0" width="1000" height="600" fill="rgba(0,0,0,0)"/>
+        <circle cx="320" cy="120" r="220" fill="url(#glow)" opacity="0.7"/>
+        <circle cx="760" cy="210" r="260" fill="url(#glow)" opacity="0.55"/>
+      `;
+
+      const edgeSvg = edges.map(([from,to]) => {
+        const a = nodeById[from], b = nodeById[to];
+        return `<path d="${edgePath(a,b)}" fill="none" stroke="url(#edgeGrad)" stroke-width="4" opacity="0.55"/>`;
+      }).join("");
+
+      const nodeSvg = nodes.map(n => {
+        const r = 42;
+        return `
+          <g filter="url(#softShadow)">
+            <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="rgba(0,0,0,.28)" stroke="rgba(255,255,255,.16)" stroke-width="2"/>
+            <circle cx="${n.x}" cy="${n.y}" r="${r-10}" fill="rgba(124,196,255,.08)" stroke="rgba(124,196,255,.22)" stroke-width="2"/>
+          </g>
+        `;
+      }).join("");
+
+      svg.innerHTML = bg + edgeSvg + nodeSvg;
+    }
+
+    // ============================================================
+    // RESET
+    // ============================================================
+    resetBtn.addEventListener("click", () => {
+      state = defaultState();
+      saveState();
+
+      enforceSingleClimb();
+      renderRows();
+      updateResourceUI();
+      updateDerivedTimersAndGainsUI();
+      renderBuildings();
+      renderTalentTree();
+      setActiveTab(state.activeRightTab);
+      renderMatchupLegend();
+
+      showToast("Reset done: everything set back to defaults.");
+    });
+
+    // ============================================================
+    // TIMER LOOP
+    // ============================================================
+    function setBar(barEl, elapsedMs, periodSec){
+      const periodMs = periodSec * 1000;
+      const pct = periodMs <= 0 ? 0 : Math.min(100, (elapsedMs / periodMs) * 100);
+      barEl.style.width = pct + "%";
+    }
+
+    function tickFrame(nowMs){
+      const eff = derivedEffects();
+
+      const last = Number(state.lastFrameMs || nowMs);
+      let dt = nowMs - last;
+      if(dt < 0) dt = 0;
+      if(dt > 2000) dt = 2000;
+      state.lastFrameMs = nowMs;
+
+      state.timers.climbElapsed += dt;
+      state.timers.lootElapsed += dt;
+      state.timers.gatherElapsed += dt;
+
+      const climbMs = eff.climbSec * 1000;
+      const lootMs = eff.lootSec * 1000;
+      const gatherMs = eff.gatherSec * 1000;
+
+      if(climbMs > 0){
+        while(state.timers.climbElapsed >= climbMs){
+          state.timers.climbElapsed -= climbMs;
+          if(doClimb()){
+            state.currentEnemy = randEnemyKey();
+            saveState();
+
+            updateRowBadges();
+            updateResourceUI();
+            renderMatchupLegend();
+
+            const e = ENEMIES[state.currentEnemy];
+            showToast(`Climbed! Highest climbed is now ${state.highestClimbed}. Next foe: ${e ? e.name : "???"}.`);
+          }
+        }
+      }
+
+      if(lootMs > 0){
+        let lootTotal = 0, events = 0;
+        while(state.timers.lootElapsed >= lootMs){
+          state.timers.lootElapsed -= lootMs;
+          const g = payoutLootOnce();
+          if(g > 0){ lootTotal += g; events++; }
+        }
+        if(events > 0){
+          updateResourceUI();
+          showToast(`Loot payout: +${lootTotal}g.`);
+        }
+      }
+
+      if(gatherMs > 0){
+        let gatherTotal = 0, events = 0;
+        while(state.timers.gatherElapsed >= gatherMs){
+          state.timers.gatherElapsed -= gatherMs;
+          const w = payoutGatherOnce();
+          if(w > 0){ gatherTotal += w; events++; }
+        }
+        if(events > 0){
+          updateResourceUI();
+          showToast(`Gather payout: +${gatherTotal}w.`);
+        }
+      }
+
+      setBar(climbBarEl, state.timers.climbElapsed, eff.climbSec);
+      setBar(lootBarEl, state.timers.lootElapsed, eff.lootSec);
+      setBar(gatherBarEl, state.timers.gatherElapsed, eff.gatherSec);
+
+      tickFrame._saveAccum = (tickFrame._saveAccum || 0) + dt;
+      if(tickFrame._saveAccum >= 1000){
+        tickFrame._saveAccum = 0;
+        saveState();
+        renderBuildings();
+        updateResourceUI();
+        updateDerivedTimersAndGainsUI();
+        updateRowBadges();
+      }
+
+      requestAnimationFrame(tickFrame);
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    enforceSingleClimb();
+    renderRows();
+    updateResourceUI();
+    updateDerivedTimersAndGainsUI();
+    renderBuildings();
+    renderTalentTree();
+    setActiveTab(state.activeRightTab);
+    updateRowBadges();
+    requestAnimationFrame(tickFrame);
+    renderMatchupLegend();
+  </script>
+</body>
+</html>
+

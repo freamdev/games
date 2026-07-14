@@ -105,24 +105,10 @@
         <h2>Heroes forged for different roles</h2>
       </div>
 
-      <div class="hero-cards">
-        <article class="character-card character-card--green">
-          <img src="TemplateData/images/cedric.png" alt="Cedric">
-          <div class="character-copy">
-            <span>Vanguard · Protector</span>
-            <h3>Cedric</h3>
-            <p>A steadfast frontline leader who shields the guild and rallies allies through impossible odds.</p>
-          </div>
-        </article>
-
-        <article class="character-card character-card--purple">
-          <img src="TemplateData/images/velthera.png" alt="Velthera">
-          <div class="character-copy">
-            <span>Void mage · Controller</span>
-            <h3>Velthera</h3>
-            <p>A dangerous spellcaster who bends void energy into devastating attacks and battlefield control.</p>
-          </div>
-        </article>
+      <div class="carousel-shell">
+        <button id="heroes-previous" class="carousel-button" type="button" aria-label="Previous hero">←</button>
+        <div id="hero-carousel" class="hero-carousel" aria-label="Guild Vanguard heroes"></div>
+        <button id="heroes-next" class="carousel-button" type="button" aria-label="Next hero">→</button>
       </div>
     </section>
 
@@ -140,7 +126,7 @@
       </div>
     </section>
 
-    <section class="play-section" >
+    <section class="play-section" id="play">
       <div class="play-heading">
         <div>
           <span class="eyebrow">Playable WebGL build</span>
@@ -162,8 +148,6 @@
           </button>
         </div>
 
-<div id="play">
-
         <div id="unity-container" class="unity-desktop">
           <canvas id="unity-canvas" width="960" height="600" tabindex="-1" aria-label="Guild Vanguard game"></canvas>
 
@@ -181,7 +165,6 @@
 
           <div id="unity-warning"></div>
         </div>
-		</div>
 
         <div class="frame-bottom">
           <div class="control-hint"><span class="key">F</span><span>Fullscreen</span></div>
@@ -198,10 +181,7 @@
         <span class="eyebrow">From the front lines</span>
         <h2>Media</h2>
       </div>
-      <div class="media-grid">
-        <img src="TemplateData/images/gameplay.jpg" alt="Gameplay battle screenshot">
-        <div class="media-placeholder"><span>More screenshots<br>coming soon</span></div>
-      </div>
+      <div id="media-gallery" class="media-gallery" aria-label="Guild Vanguard screenshots"></div>
     </section>
 
     <section class="section news-section" id="news">
@@ -216,11 +196,30 @@
     </section>
   </main>
 
+  <div id="media-lightbox" class="media-lightbox" hidden>
+    <button id="media-lightbox-close" class="media-lightbox__close" type="button" aria-label="Close screenshot">×</button>
+    <button id="media-lightbox-previous" class="media-lightbox__nav media-lightbox__nav--previous" type="button" aria-label="Previous screenshot">←</button>
+
+    <div class="media-lightbox__content">
+      <img id="media-lightbox-image" src="" alt="">
+      <div class="media-lightbox__caption">
+        <div>
+          <strong id="media-lightbox-title"></strong>
+          <span id="media-lightbox-description"></span>
+        </div>
+        <span id="media-lightbox-counter" class="media-lightbox__counter"></span>
+      </div>
+    </div>
+
+    <button id="media-lightbox-next" class="media-lightbox__nav media-lightbox__nav--next" type="button" aria-label="Next screenshot">→</button>
+  </div>
+
   <footer class="site-footer">
     <a class="brand" href="#top"><span class="brand-rune">GV</span><span class="brand-name">Guild Vanguard</span></a>
     <span>WebGL prototype build</span>
   </footer>
 
+  <script src="TemplateData/guild-vanguard-content.js"></script>
   <script>
     const canvas = document.querySelector("#unity-canvas");
     const unityContainer = document.querySelector("#unity-container");

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "forest-battle",
+    "title": "Battle in the old forest",
+    "description": "Cedric and Velthera face a brood of corrupted spiders in the current WebGL combat scene.",
+    "image": "Content/Screenshots/forest-battle.jpg",
+    "alt": "Guild Vanguard heroes fighting spider monsters in a forest"
+  },  
+  {
+    "id": "void-eruption",
+    "title": "Velthera casts Void Eruption",
+    "description": "Velthera unleashes a powerful void spell against a brood of corrupted spiders in the moonlit forest.",
+    "image": "Content/Screenshots/VoidErruptionCast.png",
+    "alt": "Velthera casting Void Eruption against spider monsters in a dark forest"
+  },
+  {
+    "id": "aurelia-forest-battle",
+    "title": "Aurelia leads the militia",
+    "description": "Aurelia and two militia groups confront swarms of corrupted spiders in the current WebGL combat scene.",
+    "image": "Content/Screenshots/AureliaFight.png",
+    "alt": "Aurelia and militia groups fighting spider monsters in a moonlit forest"
+  }
+]

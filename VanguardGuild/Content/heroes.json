@@ -1,0 +1,44 @@
+[
+  {
+    "id": "cedric",
+    "name": "Cedric",
+    "role": "Vanguard \u00b7 Protector",
+    "description": "A steadfast frontline leader who shields the guild and rallies allies through impossible odds.",
+    "image": "Content/Heroes/cedric.png",
+    "alt": "Cedric raising his sword",
+    "accent": "green",
+    "tags": [
+      "Vanguard",
+      "Support",
+      "Defense"
+    ]
+  },
+  {
+    "id": "velthera",
+    "name": "Velthera",
+    "role": "Void Mage \u00b7 Controller",
+    "description": "A dangerous spellcaster who bends void energy into devastating attacks and battlefield control.",
+    "image": "Content/Heroes/velthera.png",
+    "alt": "Velthera casting void magic",
+    "accent": "purple",
+    "tags": [
+      "Mage",
+      "Control",
+      "Void"
+    ]
+  },
+  {
+    "id": "aurelia",
+    "name": "Aurelia",
+    "role": "Holy Priestess \u00b7 Support",
+    "description": "A graceful holy spellcaster who restores wounded allies and shields the guild with radiant magic.",
+    "image": "Content/Heroes/aurelia.png",
+    "alt": "Aurelia casting holy magic",
+    "accent": "yellow",
+    "tags": [
+      "Priest",
+      "Support",
+      "Holy"
+    ]
+  }
+]

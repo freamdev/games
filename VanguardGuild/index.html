@@ -1,133 +1,294 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | GuildVanguard</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-  </head>
-  <body>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>Guild Vanguard</title>
+  <meta
+    name="description"
+    content="Lead your heroes, build your guild, and survive the darkness in Guild Vanguard."
+  >
+
+  <link rel="shortcut icon" href="TemplateData/favicon.ico">
+  <link rel="stylesheet" href="TemplateData/guild-vanguard.css">
+</head>
+
+<body>
+  <div class="page-background" aria-hidden="true"></div>
+  <div class="page-vignette" aria-hidden="true"></div>
+  <div class="ambient ambient--one" aria-hidden="true"></div>
+  <div class="ambient ambient--two" aria-hidden="true"></div>
+
+  <main class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Guild Vanguard home">
+        <span class="brand-mark">GV</span>
+        <span class="brand-copy">
+          <strong>Guild Vanguard</strong>
+          <small>Command the guild. Survive the night.</small>
+        </span>
+      </a>
+
+      <div class="header-actions">
+        <span class="build-status">
+          <span class="status-dot"></span>
+          Web build
+        </span>
+
+        <button id="header-fullscreen-button" class="button button--ghost" type="button">
+          Fullscreen
+        </button>
+      </div>
+    </header>
+
+    <section class="hero-section">
+      <div class="hero-copy">
+        <span class="eyebrow">Fantasy guild autobattler</span>
+
+        <h1>
+          Assemble your heroes.
+          <span>Hold back the darkness.</span>
+        </h1>
+
+        <p>
+          Build a guild, deploy specialized heroes, and watch your party fight
+          through dangerous expeditions in a tactical fantasy world.
+        </p>
+
+        <div class="feature-row" aria-label="Game features">
+          <span>Automatic combat</span>
+          <span>Hero progression</span>
+          <span>Expedition management</span>
         </div>
       </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-logo-title-footer"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">GuildVanguard</div>
+
+      <div class="game-stage">
+        <div class="stage-glow" aria-hidden="true"></div>
+
+        <div class="game-frame">
+          <div class="frame-top">
+            <div>
+              <span class="frame-kicker">Playable WebGL build</span>
+              <strong>Guild Vanguard</strong>
+            </div>
+
+            <div class="frame-status">
+              <span class="status-dot"></span>
+              Ready
+            </div>
+          </div>
+
+          <div id="unity-container" class="unity-desktop">
+            <canvas
+              id="unity-canvas"
+              width="960"
+              height="600"
+              tabindex="-1"
+              aria-label="Guild Vanguard game"
+            ></canvas>
+
+            <div id="unity-loading-bar">
+              <div class="loading-card">
+                <div class="loading-emblem">GV</div>
+
+                <div class="loading-copy">
+                  <strong>Preparing the expedition</strong>
+                  <span id="loading-text">Loading game data...</span>
+                </div>
+
+                <div id="unity-progress-bar-empty">
+                  <div id="unity-progress-bar-full"></div>
+                </div>
+
+                <span id="loading-percent">0%</span>
+              </div>
+            </div>
+
+            <div id="unity-warning"></div>
+          </div>
+
+          <div class="frame-bottom">
+            <div class="control-hint">
+              <span class="key">F</span>
+              <span>Fullscreen</span>
+            </div>
+
+            <div class="frame-buttons">
+              <button id="reload-button" class="icon-button" type="button" title="Reload game">
+                ↻
+              </button>
+
+              <button id="unity-fullscreen-button" class="button button--primary" type="button">
+                Enter fullscreen
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <script>
-      var canvas = document.querySelector("#unity-canvas");
+    </section>
 
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        var warningBanner = document.querySelector("#unity-warning");
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
+    <section class="lower-panel">
+      <article>
+        <span class="panel-number">01</span>
+        <div>
+          <strong>Recruit</strong>
+          <p>Build a roster of heroes with distinct roles and abilities.</p>
+        </div>
+      </article>
+
+      <article>
+        <span class="panel-number">02</span>
+        <div>
+          <strong>Deploy</strong>
+          <p>Form parties and send them into increasingly dangerous regions.</p>
+        </div>
+      </article>
+
+      <article>
+        <span class="panel-number">03</span>
+        <div>
+          <strong>Endure</strong>
+          <p>Adapt your guild and overcome monsters, bosses, and the void.</p>
+        </div>
+      </article>
+    </section>
+
+    <footer class="site-footer">
+      <span>Guild Vanguard</span>
+      <span>WebGL prototype build</span>
+    </footer>
+  </main>
+
+  <script>
+    const canvas = document.querySelector("#unity-canvas");
+    const unityContainer = document.querySelector("#unity-container");
+    const loadingBar = document.querySelector("#unity-loading-bar");
+    const loadingText = document.querySelector("#loading-text");
+    const loadingPercent = document.querySelector("#loading-percent");
+    const progressBar = document.querySelector("#unity-progress-bar-full");
+    const fullscreenButtons = [
+      document.querySelector("#unity-fullscreen-button"),
+      document.querySelector("#header-fullscreen-button")
+    ];
+    const reloadButton = document.querySelector("#reload-button");
+
+    let unityInstanceReference = null;
+
+    function unityShowBanner(msg, type) {
+      const warningBanner = document.querySelector("#unity-warning");
+
+      function updateBannerVisibility() {
+        warningBanner.style.display =
+          warningBanner.children.length ? "flex" : "none";
       }
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/Vanguard.loader.js";
-      var config = {
-        arguments: [],
-        dataUrl: buildUrl + "/Vanguard.data",
-        frameworkUrl: buildUrl + "/Vanguard.framework.js",
-        codeUrl: buildUrl + "/Vanguard.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "GuildVanguard",
-        productVersion: "1.0",
-        showBanner: unityShowBanner,
-        // errorHandler: function(err, url, line) {
-        //    alert("error " + err + " occurred at line " + line);
-        //    // Return 'true' if you handled this error and don't want Unity
-        //    // to process it further, 'false' otherwise.
-        //    return true;
-        // },
-      };
+      const message = document.createElement("div");
+      message.className = `unity-message unity-message--${type || "info"}`;
+      message.innerHTML = msg;
+      warningBanner.appendChild(message);
 
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
-
-      // If you would like all file writes inside Unity Application.persistentDataPath
-      // directory to automatically persist so that the contents are remembered when
-      // the user revisits the site the next time, uncomment the following line:
-      // config.autoSyncPersistentDataPath = true;
-      // This autosyncing is currently not the default behavior to avoid regressing
-      // existing user projects that might rely on the earlier manual
-      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
-      // expected to change.
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
-
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        document.querySelector("#unity-container").className = "unity-mobile";
-        canvas.className = "unity-mobile";
-
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
-
-
-      } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
+      if (type !== "error") {
+        setTimeout(() => {
+          message.remove();
+          updateBannerVisibility();
+        }, 5000);
       }
 
-      document.querySelector("#unity-loading-bar").style.display = "block";
+      updateBannerVisibility();
+    }
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
-              }).then((unityInstance) => {
-                document.querySelector("#unity-loading-bar").style.display = "none";
-                document.querySelector("#unity-fullscreen-button").onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
+    const buildUrl = "Build";
+    const loaderUrl = buildUrl + "/Vanguard.loader.js";
 
-              }).catch((message) => {
-                alert(message);
-              });
-            };
+    const config = {
+      arguments: [],
+      dataUrl: buildUrl + "/Vanguard.data",
+      frameworkUrl: buildUrl + "/Vanguard.framework.js",
+      codeUrl: buildUrl + "/Vanguard.wasm",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "GuildVanguard",
+      productVersion: "1.0",
+      showBanner: unityShowBanner
+    };
 
-      document.body.appendChild(script);
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      unityContainer.classList.remove("unity-desktop");
+      unityContainer.classList.add("unity-mobile");
+      canvas.classList.add("unity-mobile");
 
-    </script>
-  </body>
+      // Uncomment for better performance on weaker mobile devices:
+      // config.devicePixelRatio = 1;
+    }
+
+    loadingBar.style.display = "grid";
+
+    const loaderScript = document.createElement("script");
+    loaderScript.src = loaderUrl;
+
+    loaderScript.onload = () => {
+      createUnityInstance(canvas, config, (progress) => {
+        const percentage = Math.round(progress * 100);
+
+        progressBar.style.width = `${percentage}%`;
+        loadingPercent.textContent = `${percentage}%`;
+
+        if (percentage < 30) {
+          loadingText.textContent = "Loading world data...";
+        } else if (percentage < 70) {
+          loadingText.textContent = "Preparing heroes and monsters...";
+        } else if (percentage < 100) {
+          loadingText.textContent = "Opening the guild hall...";
+        } else {
+          loadingText.textContent = "Ready.";
+        }
+      })
+        .then((unityInstance) => {
+          unityInstanceReference = unityInstance;
+          loadingBar.classList.add("is-finished");
+
+          setTimeout(() => {
+            loadingBar.style.display = "none";
+          }, 450);
+
+          fullscreenButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+              unityInstance.SetFullscreen(1);
+            });
+          });
+        })
+        .catch((message) => {
+          loadingText.textContent = "The build could not be started.";
+          unityShowBanner(message, "error");
+        });
+    };
+
+    loaderScript.onerror = () => {
+      loadingText.textContent = "The Unity loader file could not be found.";
+      unityShowBanner(
+        "Could not load Build/Vanguard.loader.js. Check that the Build folder is next to index.html.",
+        "error"
+      );
+    };
+
+    reloadButton.addEventListener("click", () => window.location.reload());
+
+    document.addEventListener("keydown", (event) => {
+      if (
+        event.key.toLowerCase() === "f" &&
+        unityInstanceReference &&
+        document.activeElement?.tagName !== "INPUT"
+      ) {
+        unityInstanceReference.SetFullscreen(1);
+      }
+    });
+
+    document.body.appendChild(loaderScript);
+  </script>
+</body>
 </html>

@@ -1,0 +1,747 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  color-scheme: dark;
+  --bg: #050714;
+  --panel: rgba(10, 11, 27, 0.82);
+  --panel-strong: rgba(9, 10, 24, 0.96);
+  --line: rgba(167, 151, 255, 0.22);
+  --line-strong: rgba(189, 170, 255, 0.42);
+  --text: #f6f3ff;
+  --muted: #a9a4c2;
+  --violet: #8c6cff;
+  --violet-light: #b9a8ff;
+  --blue: #4f6dff;
+  --green: #8cf59d;
+  --gold: #e7c57b;
+  --shadow: 0 30px 90px rgba(0, 0, 0, 0.58);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(57, 42, 130, 0.32), transparent 42%),
+    var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+button,
+canvas {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+}
+
+.page-background {
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  background:
+    linear-gradient(to bottom, rgba(4, 5, 18, 0.3), rgba(4, 5, 18, 0.94) 74%, #050714),
+    url("guild-vanguard-background.png") center top / cover no-repeat;
+  filter: saturate(0.85);
+  transform: scale(1.025);
+}
+
+.page-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(3px);
+}
+
+.page-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(2, 3, 12, 0.88), transparent 28%, transparent 72%, rgba(2, 3, 12, 0.88)),
+    radial-gradient(circle at center, transparent 34%, rgba(2, 3, 12, 0.74) 100%);
+}
+
+.ambient {
+  position: fixed;
+  z-index: -2;
+  width: 38rem;
+  height: 38rem;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.ambient--one {
+  top: 8rem;
+  left: -16rem;
+  background: #4930ff;
+}
+
+.ambient--two {
+  right: -18rem;
+  bottom: 4rem;
+  background: #7d34ff;
+}
+
+.site-shell {
+  width: min(1500px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 24px 0 36px;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 72px;
+  padding: 10px 14px 10px 10px;
+  border: 1px solid rgba(181, 166, 255, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(12, 13, 32, 0.78), rgba(8, 9, 23, 0.7));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(18px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border: 1px solid rgba(202, 190, 255, 0.5);
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, rgba(126, 98, 255, 0.45), rgba(46, 34, 92, 0.4)),
+    rgba(15, 15, 38, 0.9);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.14),
+    0 10px 28px rgba(42, 25, 110, 0.32);
+  color: #ece8ff;
+  font-family: "Cinzel", serif;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.brand-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.brand-copy strong {
+  font-family: "Cinzel", serif;
+  font-size: 16px;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.brand-copy small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.header-actions,
+.frame-status,
+.feature-row,
+.control-hint,
+.frame-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.header-actions {
+  gap: 14px;
+}
+
+.build-status,
+.frame-status {
+  gap: 8px;
+  color: #c5c0dc;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 14px rgba(140, 245, 157, 0.9);
+}
+
+.button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button--ghost {
+  border-color: rgba(189, 173, 255, 0.25);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.button--ghost:hover {
+  border-color: rgba(189, 173, 255, 0.55);
+  background: rgba(126, 98, 255, 0.1);
+}
+
+.button--primary {
+  border-color: rgba(199, 188, 255, 0.48);
+  background: linear-gradient(135deg, #7257db, #4d3ca3);
+  box-shadow: 0 8px 24px rgba(68, 43, 164, 0.34);
+  font-weight: 700;
+}
+
+.button--primary:hover {
+  box-shadow: 0 10px 34px rgba(86, 58, 196, 0.5);
+}
+
+.hero-section {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(720px, 1.75fr);
+  gap: clamp(36px, 5vw, 82px);
+  align-items: center;
+  min-height: calc(100vh - 150px);
+  padding: clamp(54px, 8vh, 110px) 0;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  display: inline-flex;
+  margin-bottom: 20px;
+  color: var(--violet-light);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.hero-copy h1 {
+  max-width: 680px;
+  margin: 0;
+  font-family: "Cinzel", serif;
+  font-size: clamp(42px, 5vw, 76px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.hero-copy h1 span {
+  display: block;
+  margin-top: 10px;
+  background: linear-gradient(105deg, #f4efff 0%, #ad9dff 44%, #758dff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-copy p {
+  max-width: 590px;
+  margin: 25px 0 0;
+  color: #c4bfd5;
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.75;
+}
+
+.feature-row {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.feature-row span {
+  padding: 9px 12px;
+  border: 1px solid rgba(191, 177, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(9, 10, 28, 0.56);
+  color: #d3cee4;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.game-stage {
+  position: relative;
+}
+
+.stage-glow {
+  position: absolute;
+  inset: 14% 4%;
+  z-index: -1;
+  border-radius: 42%;
+  background: rgba(89, 62, 211, 0.34);
+  filter: blur(70px);
+}
+
+.game-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  background: var(--panel-strong);
+  box-shadow:
+    var(--shadow),
+    0 0 0 1px rgba(255, 255, 255, 0.035) inset,
+    0 0 70px rgba(62, 45, 155, 0.14);
+}
+
+.game-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.09),
+    inset 0 0 80px rgba(94, 72, 210, 0.06);
+  pointer-events: none;
+}
+
+.frame-top,
+.frame-bottom {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 18px;
+  background:
+    linear-gradient(180deg, rgba(20, 19, 43, 0.98), rgba(12, 13, 31, 0.94));
+}
+
+.frame-top {
+  border-bottom: 1px solid var(--line);
+}
+
+.frame-bottom {
+  border-top: 1px solid var(--line);
+}
+
+.frame-top > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.frame-kicker {
+  color: var(--violet-light);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.frame-top strong {
+  font-family: "Cinzel", serif;
+  font-size: 15px;
+  letter-spacing: 0.07em;
+}
+
+#unity-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #070812;
+}
+
+#unity-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #070812;
+  outline: none;
+}
+
+#unity-loading-bar {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  place-items: center;
+  padding: 30px;
+  background:
+    linear-gradient(rgba(6, 7, 20, 0.78), rgba(6, 7, 20, 0.92)),
+    url("guild-vanguard-background.png") center / cover no-repeat;
+  transition:
+    opacity 350ms ease,
+    visibility 350ms ease;
+}
+
+#unity-loading-bar.is-finished {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loading-card {
+  display: grid;
+  width: min(430px, 100%);
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 24px;
+  border: 1px solid rgba(192, 178, 255, 0.34);
+  border-radius: 18px;
+  background: rgba(8, 9, 24, 0.86);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(18px);
+}
+
+.loading-emblem {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  grid-row: span 2;
+  place-items: center;
+  border: 1px solid rgba(199, 187, 255, 0.48);
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(122, 94, 244, 0.58), rgba(43, 33, 94, 0.72));
+  font-family: "Cinzel", serif;
+  font-weight: 800;
+}
+
+.loading-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.loading-copy strong {
+  font-family: "Cinzel", serif;
+  font-size: 14px;
+}
+
+.loading-copy span,
+#loading-percent {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+#unity-progress-bar-empty {
+  grid-column: 2 / 3;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+#unity-progress-bar-full {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--violet), #6f8cff);
+  box-shadow: 0 0 18px rgba(125, 103, 255, 0.7);
+  transition: width 180ms ease;
+}
+
+#unity-warning {
+  position: absolute;
+  inset: 14px 14px auto;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.unity-message {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(24, 24, 38, 0.92);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  font-size: 13px;
+  line-height: 1.5;
+  backdrop-filter: blur(12px);
+}
+
+.unity-message--warning {
+  border-color: rgba(255, 205, 96, 0.45);
+  color: #ffe6ad;
+}
+
+.unity-message--error {
+  border-color: rgba(255, 91, 110, 0.48);
+  color: #ffc4cb;
+}
+
+.control-hint {
+  gap: 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.key {
+  display: grid;
+  min-width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-bottom-color: rgba(255, 255, 255, 0.24);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #e6e1f7;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.frame-buttons {
+  gap: 10px;
+}
+
+.icon-button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(189, 173, 255, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #d7d1ed;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.icon-button:hover {
+  border-color: rgba(189, 173, 255, 0.52);
+  background: rgba(124, 94, 255, 0.1);
+}
+
+.lower-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.lower-panel article {
+  display: flex;
+  gap: 16px;
+  min-height: 126px;
+  padding: 22px;
+  border: 1px solid rgba(183, 168, 255, 0.15);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(13, 14, 34, 0.8), rgba(9, 10, 25, 0.66));
+  backdrop-filter: blur(15px);
+}
+
+.panel-number {
+  color: rgba(181, 164, 255, 0.54);
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lower-panel strong {
+  font-family: "Cinzel", serif;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.lower-panel p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.site-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 4px 0;
+  color: #77728e;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.unity-mobile {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  border-radius: 0 !important;
+}
+
+canvas.unity-mobile {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+body:has(#unity-container.unity-mobile) .site-header,
+body:has(#unity-container.unity-mobile) .hero-copy,
+body:has(#unity-container.unity-mobile) .frame-top,
+body:has(#unity-container.unity-mobile) .frame-bottom,
+body:has(#unity-container.unity-mobile) .lower-panel,
+body:has(#unity-container.unity-mobile) .site-footer {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .hero-section {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 60px 0;
+  }
+
+  .hero-copy {
+    max-width: 760px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(44px, 8vw, 72px);
+  }
+}
+
+@media (max-width: 760px) {
+  .site-shell {
+    width: min(100% - 22px, 1500px);
+    padding-top: 11px;
+  }
+
+  .site-header {
+    min-height: 62px;
+    border-radius: 14px;
+  }
+
+  .brand-copy small,
+  .build-status {
+    display: none;
+  }
+
+  .hero-section {
+    gap: 34px;
+    padding: 44px 0;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(38px, 12vw, 58px);
+  }
+
+  .game-frame {
+    border-radius: 15px;
+  }
+
+  .frame-top,
+  .frame-bottom {
+    padding: 12px;
+  }
+
+  .frame-kicker,
+  .frame-status,
+  .control-hint {
+    display: none;
+  }
+
+  .frame-bottom {
+    justify-content: flex-end;
+  }
+
+  .loading-card {
+    grid-template-columns: 1fr auto;
+  }
+
+  .loading-emblem {
+    display: none;
+  }
+
+  .loading-copy {
+    grid-column: 1 / -1;
+  }
+
+  #unity-progress-bar-empty {
+    grid-column: 1;
+  }
+
+  .lower-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions .button {
+    display: none;
+  }
+
+  .brand-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .brand-copy strong {
+    font-size: 13px;
+  }
+
+  .hero-copy p {
+    font-size: 14px;
+  }
+
+  .feature-row {
+    gap: 7px;
+  }
+
+  .feature-row span {
+    font-size: 10px;
+  }
+
+  .button--primary {
+    width: 100%;
+  }
+
+  .frame-buttons {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

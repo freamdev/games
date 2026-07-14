@@ -3,166 +3,223 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
   <title>Guild Vanguard</title>
-  <meta
-    name="description"
-    content="Lead your heroes, build your guild, and survive the darkness in Guild Vanguard."
-  >
+  <meta name="description" content="Lead your heroes, build your guild, and survive the darkness in Guild Vanguard.">
 
   <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/guild-vanguard.css">
 </head>
 
 <body>
-  <div class="page-background" aria-hidden="true"></div>
-  <div class="page-vignette" aria-hidden="true"></div>
-  <div class="ambient ambient--one" aria-hidden="true"></div>
-  <div class="ambient ambient--two" aria-hidden="true"></div>
+  <div class="page-noise" aria-hidden="true"></div>
 
-  <main class="site-shell">
-    <header class="site-header">
-      <a class="brand" href="#" aria-label="Guild Vanguard home">
-        <span class="brand-mark">GV</span>
-        <span class="brand-copy">
-          <strong>Guild Vanguard</strong>
-          <small>Command the guild. Survive the night.</small>
-        </span>
-      </a>
+  <header class="site-header" id="top">
+    <a class="brand" href="#home" aria-label="Guild Vanguard home">
+      <span class="brand-rune">GV</span>
+      <span class="brand-name">Guild Vanguard</span>
+    </a>
 
-      <div class="header-actions">
-        <span class="build-status">
-          <span class="status-dot"></span>
-          Web build
-        </span>
+    <button class="menu-button" id="menu-button" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span></span><span></span><span></span>
+      <span class="sr-only">Toggle navigation</span>
+    </button>
 
-        <button id="header-fullscreen-button" class="button button--ghost" type="button">
-          Fullscreen
-        </button>
-      </div>
-    </header>
+    <nav class="site-nav" id="site-nav" aria-label="Primary navigation">
+      <a href="#home" class="is-active">Home</a>
+      <a href="#gameplay">Gameplay</a>
+      <a href="#heroes">Heroes</a>
+      <a href="#features">Features</a>
+      <a href="#media">Media</a>
+      <a href="#news">News</a>
+    </nav>
 
-    <section class="hero-section">
-      <div class="hero-copy">
-        <span class="eyebrow">Fantasy guild autobattler</span>
+    <a class="button button--small button--primary header-cta" href="#play">Play build</a>
+  </header>
 
-        <h1>
-          Assemble your heroes.
-          <span>Hold back the darkness.</span>
-        </h1>
+  <main>
+    <section class="hero" id="home">
+      <div class="hero-background" aria-hidden="true"></div>
+      <div class="hero-vignette" aria-hidden="true"></div>
 
+      <img class="hero-character hero-character--cedric" src="TemplateData/images/cedric.png" alt="Cedric raising his sword">
+      <img class="hero-character hero-character--velthera" src="TemplateData/images/velthera.png" alt="Velthera casting void magic">
+
+      <div class="hero-content">
+        <span class="eyebrow">Team manager auto-battler</span>
+        <h1>Guild <span>Vanguard</span></h1>
         <p>
-          Build a guild, deploy specialized heroes, and watch your party fight
-          through dangerous expeditions in a tactical fantasy world.
+          Recruit extraordinary heroes, command multiple expeditions,
+          and guide your guild through a world consumed by darkness.
         </p>
 
-        <div class="feature-row" aria-label="Game features">
-          <span>Automatic combat</span>
-          <span>Hero progression</span>
-          <span>Expedition management</span>
+        <div class="hero-actions">
+          <a class="button button--primary" href="#play">Play WebGL build</a>
+          <a class="button button--ghost" href="#gameplay">Discover the game</a>
         </div>
       </div>
 
-      <div class="game-stage">
-        <div class="stage-glow" aria-hidden="true"></div>
+      <div class="feature-strip" aria-label="Core game features">
+        <article>
+          <span class="feature-icon">♜</span>
+          <div><strong>Manage expeditions</strong><small>Lead multiple parties into the unknown.</small></div>
+        </article>
+        <article>
+          <span class="feature-icon">♟</span>
+          <div><strong>Build your team</strong><small>Recruit heroes and shape your roster.</small></div>
+        </article>
+        <article>
+          <span class="feature-icon">⚔</span>
+          <div><strong>Automatic combat</strong><small>Watch tactical battles unfold.</small></div>
+        </article>
+        <article>
+          <span class="feature-icon">✦</span>
+          <div><strong>Race and conquer</strong><small>Complete dangerous regions first.</small></div>
+        </article>
+      </div>
+    </section>
 
-        <div class="game-frame">
-          <div class="frame-top">
-            <div>
-              <span class="frame-kicker">Playable WebGL build</span>
-              <strong>Guild Vanguard</strong>
-            </div>
+    <section class="section gameplay-intro" id="gameplay">
+      <div class="section-heading">
+        <span class="eyebrow">Command from the guild hall</span>
+        <h2>A living battlefield, not a waiting game</h2>
+        <p>
+          Assemble your party, prepare their abilities, and watch every decision
+          play out in fast, readable auto-battles.
+        </p>
+      </div>
 
-            <div class="frame-status">
-              <span class="status-dot"></span>
-              Ready
-            </div>
+      <div class="gameplay-preview-card">
+        <img src="TemplateData/images/gameplay.jpg" alt="Guild Vanguard battle against a group of spider monsters">
+        <div class="preview-overlay">
+          <span>Actual in-game battle</span>
+          <a href="#play">Launch the playable build ↓</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section heroes-section" id="heroes">
+      <div class="section-heading section-heading--center">
+        <span class="eyebrow">Meet the vanguard</span>
+        <h2>Heroes forged for different roles</h2>
+      </div>
+
+      <div class="hero-cards">
+        <article class="character-card character-card--green">
+          <img src="TemplateData/images/cedric.png" alt="Cedric">
+          <div class="character-copy">
+            <span>Vanguard · Protector</span>
+            <h3>Cedric</h3>
+            <p>A steadfast frontline leader who shields the guild and rallies allies through impossible odds.</p>
+          </div>
+        </article>
+
+        <article class="character-card character-card--purple">
+          <img src="TemplateData/images/velthera.png" alt="Velthera">
+          <div class="character-copy">
+            <span>Void mage · Controller</span>
+            <h3>Velthera</h3>
+            <p>A dangerous spellcaster who bends void energy into devastating attacks and battlefield control.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="section-heading">
+        <span class="eyebrow">Build the guild your way</span>
+        <h2>Every expedition strengthens the whole roster</h2>
+      </div>
+
+      <div class="feature-grid">
+        <article><span>01</span><h3>Recruit</h3><p>Build a roster of heroes with distinct roles, abilities, and progression paths.</p></article>
+        <article><span>02</span><h3>Deploy</h3><p>Create specialized parties and send them into increasingly dangerous regions.</p></article>
+        <article><span>03</span><h3>Adapt</h3><p>Respond to enemy compositions and refine your teams between expeditions.</p></article>
+        <article><span>04</span><h3>Conquer</h3><p>Defeat monsters, bosses, and the growing influence of the void.</p></article>
+      </div>
+    </section>
+
+    <section class="play-section" >
+      <div class="play-heading">
+        <div>
+          <span class="eyebrow">Playable WebGL build</span>
+          <h2>Enter the expedition</h2>
+        </div>
+
+        <div class="build-status"><span class="status-dot"></span> Web build ready</div>
+      </div>
+
+      <div class="game-frame">
+        <div class="frame-top">
+          <div>
+            <span class="frame-kicker">Guild Vanguard</span>
+            <strong>Live prototype</strong>
           </div>
 
-          <div id="unity-container" class="unity-desktop">
-            <canvas
-              id="unity-canvas"
-              width="960"
-              height="600"
-              tabindex="-1"
-              aria-label="Guild Vanguard game"
-            ></canvas>
+          <button id="header-fullscreen-button" class="button button--ghost button--small" type="button">
+            Fullscreen
+          </button>
+        </div>
 
-            <div id="unity-loading-bar">
-              <div class="loading-card">
-                <div class="loading-emblem">GV</div>
+<div id="play">
 
-                <div class="loading-copy">
-                  <strong>Preparing the expedition</strong>
-                  <span id="loading-text">Loading game data...</span>
-                </div>
+        <div id="unity-container" class="unity-desktop">
+          <canvas id="unity-canvas" width="960" height="600" tabindex="-1" aria-label="Guild Vanguard game"></canvas>
 
-                <div id="unity-progress-bar-empty">
-                  <div id="unity-progress-bar-full"></div>
-                </div>
-
-                <span id="loading-percent">0%</span>
+          <div id="unity-loading-bar">
+            <div class="loading-card">
+              <div class="loading-emblem">GV</div>
+              <div class="loading-copy">
+                <strong>Preparing the expedition</strong>
+                <span id="loading-text">Loading game data...</span>
               </div>
+              <div id="unity-progress-bar-empty"><div id="unity-progress-bar-full"></div></div>
+              <span id="loading-percent">0%</span>
             </div>
-
-            <div id="unity-warning"></div>
           </div>
 
-          <div class="frame-bottom">
-            <div class="control-hint">
-              <span class="key">F</span>
-              <span>Fullscreen</span>
-            </div>
+          <div id="unity-warning"></div>
+        </div>
+		</div>
 
-            <div class="frame-buttons">
-              <button id="reload-button" class="icon-button" type="button" title="Reload game">
-                ↻
-              </button>
-
-              <button id="unity-fullscreen-button" class="button button--primary" type="button">
-                Enter fullscreen
-              </button>
-            </div>
+        <div class="frame-bottom">
+          <div class="control-hint"><span class="key">F</span><span>Fullscreen</span></div>
+          <div class="frame-buttons">
+            <button id="reload-button" class="icon-button" type="button" title="Reload game">↻</button>
+            <button id="unity-fullscreen-button" class="button button--primary" type="button">Enter fullscreen</button>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="lower-panel">
-      <article>
-        <span class="panel-number">01</span>
-        <div>
-          <strong>Recruit</strong>
-          <p>Build a roster of heroes with distinct roles and abilities.</p>
-        </div>
-      </article>
-
-      <article>
-        <span class="panel-number">02</span>
-        <div>
-          <strong>Deploy</strong>
-          <p>Form parties and send them into increasingly dangerous regions.</p>
-        </div>
-      </article>
-
-      <article>
-        <span class="panel-number">03</span>
-        <div>
-          <strong>Endure</strong>
-          <p>Adapt your guild and overcome monsters, bosses, and the void.</p>
-        </div>
-      </article>
+    <section class="section media-section" id="media">
+      <div class="section-heading section-heading--center">
+        <span class="eyebrow">From the front lines</span>
+        <h2>Media</h2>
+      </div>
+      <div class="media-grid">
+        <img src="TemplateData/images/gameplay.jpg" alt="Gameplay battle screenshot">
+        <div class="media-placeholder"><span>More screenshots<br>coming soon</span></div>
+      </div>
     </section>
 
-    <footer class="site-footer">
-      <span>Guild Vanguard</span>
-      <span>WebGL prototype build</span>
-    </footer>
+    <section class="section news-section" id="news">
+      <div class="news-card">
+        <div>
+          <span class="eyebrow">Development dispatch</span>
+          <h2>The guild is still growing</h2>
+          <p>Follow future builds, new heroes, regions, and combat improvements as the prototype develops.</p>
+        </div>
+        <a class="button button--primary" href="#play">Play the latest build</a>
+      </div>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <a class="brand" href="#top"><span class="brand-rune">GV</span><span class="brand-name">Guild Vanguard</span></a>
+    <span>WebGL prototype build</span>
+  </footer>
 
   <script>
     const canvas = document.querySelector("#unity-canvas");
@@ -176,15 +233,45 @@
       document.querySelector("#header-fullscreen-button")
     ];
     const reloadButton = document.querySelector("#reload-button");
+    const menuButton = document.querySelector("#menu-button");
+    const siteNav = document.querySelector("#site-nav");
 
     let unityInstanceReference = null;
+
+    menuButton.addEventListener("click", () => {
+      const isOpen = siteNav.classList.toggle("is-open");
+      menuButton.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    document.querySelectorAll(".site-nav a").forEach(link => {
+      link.addEventListener("click", () => {
+        siteNav.classList.remove("is-open");
+        menuButton.setAttribute("aria-expanded", "false");
+      });
+    });
+
+    const observedSections = [...document.querySelectorAll("main section[id]")];
+    const navLinks = [...document.querySelectorAll(".site-nav a")];
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+      if (!visible) return;
+
+      navLinks.forEach(link => {
+        link.classList.toggle("is-active", link.getAttribute("href") === `#${visible.target.id}`);
+      });
+    }, { rootMargin: "-30% 0px -60% 0px", threshold: [0, 0.2, 0.5] });
+
+    observedSections.forEach(section => sectionObserver.observe(section));
 
     function unityShowBanner(msg, type) {
       const warningBanner = document.querySelector("#unity-warning");
 
       function updateBannerVisibility() {
-        warningBanner.style.display =
-          warningBanner.children.length ? "flex" : "none";
+        warningBanner.style.display = warningBanner.children.length ? "flex" : "none";
       }
 
       const message = document.createElement("div");
@@ -221,8 +308,6 @@
       unityContainer.classList.remove("unity-desktop");
       unityContainer.classList.add("unity-mobile");
       canvas.classList.add("unity-mobile");
-
-      // Uncomment for better performance on weaker mobile devices:
       // config.devicePixelRatio = 1;
     }
 
@@ -234,38 +319,30 @@
     loaderScript.onload = () => {
       createUnityInstance(canvas, config, (progress) => {
         const percentage = Math.round(progress * 100);
-
         progressBar.style.width = `${percentage}%`;
         loadingPercent.textContent = `${percentage}%`;
 
-        if (percentage < 30) {
-          loadingText.textContent = "Loading world data...";
-        } else if (percentage < 70) {
-          loadingText.textContent = "Preparing heroes and monsters...";
-        } else if (percentage < 100) {
-          loadingText.textContent = "Opening the guild hall...";
-        } else {
-          loadingText.textContent = "Ready.";
-        }
+        if (percentage < 30) loadingText.textContent = "Loading world data...";
+        else if (percentage < 70) loadingText.textContent = "Preparing heroes and monsters...";
+        else if (percentage < 100) loadingText.textContent = "Opening the guild hall...";
+        else loadingText.textContent = "Ready.";
       })
-        .then((unityInstance) => {
-          unityInstanceReference = unityInstance;
-          loadingBar.classList.add("is-finished");
+      .then((unityInstance) => {
+        unityInstanceReference = unityInstance;
+        loadingBar.classList.add("is-finished");
 
-          setTimeout(() => {
-            loadingBar.style.display = "none";
-          }, 450);
+        setTimeout(() => {
+          loadingBar.style.display = "none";
+        }, 450);
 
-          fullscreenButtons.forEach((button) => {
-            button.addEventListener("click", () => {
-              unityInstance.SetFullscreen(1);
-            });
-          });
-        })
-        .catch((message) => {
-          loadingText.textContent = "The build could not be started.";
-          unityShowBanner(message, "error");
+        fullscreenButtons.forEach((button) => {
+          button.addEventListener("click", () => unityInstance.SetFullscreen(1));
         });
+      })
+      .catch((message) => {
+        loadingText.textContent = "The build could not be started.";
+        unityShowBanner(message, "error");
+      });
     };
 
     loaderScript.onerror = () => {
@@ -282,7 +359,7 @@
       if (
         event.key.toLowerCase() === "f" &&
         unityInstanceReference &&
-        document.activeElement?.tagName !== "INPUT"
+        !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)
       ) {
         unityInstanceReference.SetFullscreen(1);
       }

@@ -1,17 +1,19 @@
-# Guild Vanguard WebGL page
+Guild Vanguard WebGL website template
 
-1. Copy the supplied `index.html` into the root of your Unity WebGL export.
-2. Copy `TemplateData/guild-vanguard.css` and
-   `TemplateData/guild-vanguard-background.png` into the export's TemplateData folder.
-3. Keep your existing `Build`, `StreamingAssets`, favicon, and Unity files.
-4. The page expects these build files:
-   - Build/Vanguard.loader.js
-   - Build/Vanguard.data
-   - Build/Vanguard.framework.js
-   - Build/Vanguard.wasm
+Copy these items into the root of your Unity WebGL export:
+- index.html
+- TemplateData/guild-vanguard.css
+- TemplateData/images/
 
-If your generated build uses another filename, change the four `Vanguard...` references
-inside `index.html`.
+Keep your generated folders beside index.html:
+- Build/
+- StreamingAssets/
+- TemplateData/favicon.ico
 
-The Google Fonts import requires internet access. To make the page fully offline,
-remove the first line of the CSS or replace the fonts with locally hosted web fonts.
+The loader expects these exact files:
+Build/Vanguard.loader.js
+Build/Vanguard.data
+Build/Vanguard.framework.js
+Build/Vanguard.wasm
+
+If Unity generated different filenames, update the four paths near the bottom of index.html.

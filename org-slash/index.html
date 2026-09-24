@@ -3,53 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bolya Simulator</title>
+<title>Bólya Simulator</title>
 <style>
   :root{
     --bg:#f8fafc; --ink:#1f2937; --muted:#64748b;
-    --line:#bfd7f1; --node:#8dbaf3; --danger:#ef4444;
-    --accent:#f97316; --panel:rgba(255,255,255,.92);
+    --line:#bfd7f1; --accent:#f97316; --danger:#ef4444;
+    --ok:#16a34a; --panel:rgba(255,255,255,.94);
   }
   *{box-sizing:border-box}
-  body{
-    margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;
-    background:var(--bg); color:var(--ink); overflow:hidden;
-  }
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden}
   #app{height:100vh;display:flex;flex-direction:column}
-  header{
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    padding:10px 14px; background:var(--panel); border-bottom:1px solid #e2e8f0;
-    z-index:3;
-  }
-  .brand{font-weight:900;letter-spacing:.03em;margin-right:auto}
-  .pill{
-    border:1px solid #cbd5e1; border-radius:999px; padding:7px 11px;
-    background:white; font-weight:700; font-size:13px;
-  }
-  button{
-    border:1px solid #cbd5e1; background:white; color:#0f172a;
-    border-radius:10px; padding:8px 12px; font-weight:800; cursor:pointer;
-  }
+  header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--panel);border-bottom:1px solid #e2e8f0;z-index:3}
+  .brand{font-weight:900;letter-spacing:.04em;margin-right:auto}
+  .pill{border:1px solid #cbd5e1;border-radius:999px;padding:7px 11px;background:white;font-weight:800;font-size:13px;white-space:nowrap}
+  button{border:1px solid #cbd5e1;background:white;color:#0f172a;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   button:hover{background:#f1f5f9}
-  button.active{border-color:var(--accent); box-shadow:0 0 0 2px rgba(249,115,22,.16)}
-  #wrap{position:relative; flex:1; min-height:0}
+  button.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(249,115,22,.15)}
+  #wrap{position:relative;flex:1;min-height:0}
   canvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
-  #help{
-    position:absolute; left:14px; bottom:14px; max-width:min(420px,calc(100% - 28px));
-    padding:10px 12px; border:1px solid #dbeafe; border-radius:12px;
-    background:rgba(255,255,255,.90); backdrop-filter:blur(8px);
-    color:#475569; font-size:13px; line-height:1.35; pointer-events:none;
-  }
-  #toast{
-    position:absolute; top:14px; left:50%; transform:translateX(-50%);
-    padding:8px 12px; border-radius:999px; color:white; background:rgba(15,23,42,.88);
-    opacity:0; transition:opacity .18s; pointer-events:none; font-weight:800;
-  }
-  @media (max-width:700px){
-    .brand{width:100%;margin-right:0}
-    header{gap:7px}
-    button,.pill{font-size:12px;padding:7px 9px}
-  }
+  #toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);padding:8px 12px;border-radius:999px;color:#fff;background:rgba(15,23,42,.9);opacity:0;transition:opacity .16s;pointer-events:none;font-weight:800;z-index:2}
+  #help{position:absolute;left:14px;bottom:14px;max-width:min(470px,calc(100% - 28px));padding:10px 12px;border:1px solid #dbeafe;border-radius:12px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);color:#475569;font-size:13px;line-height:1.35;pointer-events:none}
+  @media (max-width:800px){.brand{width:100%;margin-right:0}button,.pill{font-size:12px;padding:7px 9px}}
 </style>
 </head>
 <body>
@@ -58,434 +32,314 @@
     <div class="brand">ORG SLASH</div>
     <button id="sameBtn" class="active">Same tree</button>
     <button id="randomBtn">Random tree</button>
-    <button id="resetBtn">Reset</button>
+    <button id="resetBtn">Restart</button>
     <span class="pill">Score: <b id="score">0</b></span>
     <span class="pill">Combo: <b id="combo">x1</b></span>
-    <span class="pill">Remaining: <b id="remaining">0</b></span>
+    <span class="pill">Loose: <b id="loose">0</b></span>
   </header>
   <div id="wrap">
     <canvas id="game"></canvas>
     <div id="toast"></div>
-    <div id="help">
-      Drag the mouse (or a finger) across a branch to slash it. The entire disconnected subtree drops and fades.
-      Every node is a stylized head; thin twigs are worth less, while a large clean cut gives a subtree bonus. Fast consecutive cuts build combo.
-    </div>
+    <div id="help">Cut any branch or endpoint. Bigger cuts create more future growth elsewhere. Swipe through loose heads to kick them back up.</div>
   </div>
 </div>
-
 <script>
 (() => {
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const scoreEl = document.getElementById('score');
-  const comboEl = document.getElementById('combo');
-  const remainingEl = document.getElementById('remaining');
-  const toast = document.getElementById('toast');
-  const sameBtn = document.getElementById('sameBtn');
-  const randomBtn = document.getElementById('randomBtn');
-  const resetBtn = document.getElementById('resetBtn');
+  const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+  const scoreEl=document.getElementById('score'),comboEl=document.getElementById('combo'),looseEl=document.getElementById('loose');
+  const toast=document.getElementById('toast'),sameBtn=document.getElementById('sameBtn'),randomBtn=document.getElementById('randomBtn');
+  const resetBtn=document.getElementById('resetBtn');
 
-  const DPR = Math.min(2, window.devicePixelRatio || 1);
-  let W=1,H=1;
-  let nodes=[], edges=[];
-  let detached=[];
-  let mode='same';
-  let score=0, combo=1, lastCutAt=0;
-  let pointerDown=false, lastPointer=null, slashTrail=[];
-  let nextNodeId=1, nextEdgeId=1;
-  let particles=[];
-  let reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DPR=Math.min(2,window.devicePixelRatio||1);
+  let W=1,H=1,nodes=[],edges=[],slots=[],particles=[];
+  let mode='same',score=0,combo=1,lastActionAt=0;
+  let growthCredits=0,growthTimer=0,nextGrowthAt=.45+Math.random()*.35;
+  let pointerDown=false,lastPointer=null,slashTrail=[];
+  let nextNodeId=1,nextEdgeId=1,nextSlotId=1;
+  const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const facePalettes = [
-    ['#ffd7b5','#2b211b','#6b3f2b'], ['#f0b48a','#2b1b16','#2e4057'],
-    ['#9e6240','#1b1721','#633b2c'], ['#d99872','#402a2a','#7b2d26'],
-    ['#f4c9a7','#172554','#6b4f3a'], ['#7a4b34','#111827','#3f2d20']
+  const facePalettes=[
+    ['#ffd7b5','#2b211b','#6b3f2b'],['#f0b48a','#2b1b16','#2e4057'],['#9e6240','#1b1721','#633b2c'],
+    ['#d99872','#402a2a','#7b2d26'],['#f4c9a7','#172554','#6b4f3a'],['#7a4b34','#111827','#3f2d20']
   ];
-  const hairStyles = ['cap','bob','spike','side','bun','buzz'];
+  const hairStyles=['cap','bob','spike','side','bun','buzz'];
 
   function resize(){
-    const r=canvas.getBoundingClientRect();
-    W=Math.max(1,r.width); H=Math.max(1,r.height);
-    canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR);
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-    layout();
+    const r=canvas.getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);
+    canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);layout();
   }
 
   function addNode(x,y,parent=null,level=0,kind='blue'){
-    const id=nextNodeId++;
-    const seed=(id*9301+49297)%233280;
-    nodes.push({
-      id,x,y,baseX:x,baseY:y,parent,level,kind,
-      radius: level===0?13:12,
-      alive:true, detached:false, vy:0,vx:0,alpha:1,rot:0,
-      face: seed%5===0 || kind==='face',
-      palette: facePalettes[seed%facePalettes.length],
-      hair: hairStyles[seed%hairStyles.length],
-      eye: seed%3,
-    });
-    if(parent!=null){
-      edges.push({id:nextEdgeId++,a:parent,b:id,cut:false,alpha:1});
-    }
+    const id=nextNodeId++,seed=(id*9301+49297)%233280;
+    nodes.push({id,x:0,y:0,baseX:x,baseY:y,parent,level,kind,radius:level===0?13:12,detached:false,vx:0,vy:0,rot:0,alpha:1,
+      palette:facePalettes[seed%facePalettes.length],hair:hairStyles[seed%hairStyles.length],eye:seed%3,bounces:0});
+    if(parent!=null) edges.push({id:nextEdgeId++,a:parent,b:id,cut:false});
     return id;
   }
-
-  function node(id){ return nodes.find(n=>n.id===id); }
+  function node(id){return nodes.find(n=>n.id===id)}
+  function edgeByChild(id){return edges.find(e=>e.b===id)}
+  function branch(parent,specs){const out=[];for(const s of specs){const [x,y,k='blue']=s;out.push(addNode(x,y,parent,node(parent).level+1,k));}return out;}
+  function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 
   function clearAll(){
-    nodes=[];edges=[];detached=[];particles=[];score=0;combo=1;lastCutAt=0;
-    nextNodeId=1;nextEdgeId=1; slashTrail=[];
+    nodes=[];edges=[];slots=[];particles=[];score=0;combo=1;lastActionAt=0;growthCredits=0;growthTimer=0;nextGrowthAt=.45+Math.random()*.35;nextNodeId=1;nextEdgeId=1;nextSlotId=1;slashTrail=[];
   }
 
   function buildSame(){
     clearAll();
-    // A wide hand-authored hierarchy inspired by the supplied reference:
     const root=addNode(.37,.055,null,0);
-    const leftTop=addNode(.035,.16,root,1);
-    const left2=addNode(.086,.16,root,1);
-    const left3=addNode(.148,.16,root,1);
-    const left4=addNode(.169,.16,root,1);
-    const left5=addNode(.190,.16,root,1);
-    const rightRoot=addNode(.71,.16,root,1,'face');
-
-    branch(leftTop,[[-.01,.27,'blue'],[.035,.27,'face']]);
-    const l2kids=branch(left2,[[.066,.27],[.087,.27],[.108,.27]]);
-    branch(l2kids[0],[[.066,.39],[.087,.39,'face']]);
-    const l3kids=branch(left3,[[.128,.27],[.149,.27],[.17,.27,'face']]);
-    const leftMid=addNode(.168,.38,l3kids[1],3);
-
-    const centerBoss=addNode(.445,.31,leftMid,4);
-    const c1=addNode(.335,.40,centerBoss,5);
-    const c2=addNode(.444,.40,centerBoss,5);
-    const c3=addNode(.475,.40,centerBoss,5);
-    const c4=addNode(.545,.40,centerBoss,5);
+    const leftTop=addNode(.035,.16,root,1),left2=addNode(.086,.16,root,1),left3=addNode(.148,.16,root,1);
+    addNode(.169,.16,root,1);addNode(.190,.16,root,1);const rightRoot=addNode(.71,.16,root,1,'face');
+    branch(leftTop,[[-.01,.27],[.035,.27,'face']]);
+    const l2kids=branch(left2,[[.066,.27],[.087,.27],[.108,.27]]);branch(l2kids[0],[[.066,.39],[.087,.39,'face']]);
+    const l3kids=branch(left3,[[.128,.27],[.149,.27],[.17,.27,'face']]);const leftMid=addNode(.168,.38,l3kids[1],3);
+    const centerBoss=addNode(.445,.31,leftMid,4);const c1=addNode(.335,.40,centerBoss,5),c2=addNode(.444,.40,centerBoss,5),c3=addNode(.475,.40,centerBoss,5),c4=addNode(.545,.40,centerBoss,5);
     branch(c1,[[.302,.53],[.325,.53],[.348,.53],[.371,.53],[.394,.53],[.417,.53,'face']]);
-    const c2a=branch(c2,[[.422,.53],[.452,.53,'face']]);
-    branch(c2a[0],[[.412,.65,'face']]);
-    const c3a=branch(c3,[[.456,.53],[.485,.53]]);
-    branch(c3a[1],[[.492,.65,'face']]);
-    const c4a=branch(c4,[[.532,.53],[.558,.53],[.582,.53,'face'],[.605,.53]]);
-    branch(c4a[1],[[.552,.65],[.575,.65],[.598,.65]]);
-
-    const rrKids=branch(rightRoot,[
-      [.765,.27],[.795,.27,'face'],[.818,.27],[.842,.27,'face'],[.864,.27],
-      [.888,.27,'face'],[.91,.27,'face'],[.932,.27],[.953,.27,'face'],[.977,.27]
-    ]);
-    const rMid=addNode(.703,.39,rightRoot,2);
-    const r1=branch(rMid,[[.61,.51],[.635,.51,'face'],[.66,.51],[.686,.51],[.712,.51,'face'],[.735,.51],[.758,.51],[.781,.51]]);
-    branch(r1[4],[[.71,.63],[.732,.63],[.754,.63]]);
-    branch(rrKids[1],[[.785,.39],[.806,.39,'face']]);
-    branch(rrKids[3],[[.835,.39],[.855,.39,'face']]);
-
-    // add orange "highlight rings" like the reference, but randomized enough to be decorative.
-    for(const n of nodes) if(n.level>=3 && (n.id%4===0 || n.id%7===0)) n.kind='ring';
-    layout();
-  }
-
-  function branch(parent, specs){
-    const out=[];
-    for(const s of specs){
-      const [x,y,k='blue']=s;
-      out.push(addNode(x,y,parent,node(parent).level+1,k));
-    }
-    return out;
+    const c2a=branch(c2,[[.422,.53],[.452,.53,'face']]);branch(c2a[0],[[.412,.65,'face']]);
+    const c3a=branch(c3,[[.456,.53],[.485,.53]]);branch(c3a[1],[[.492,.65,'face']]);
+    const c4a=branch(c4,[[.532,.53],[.558,.53],[.582,.53,'face'],[.605,.53]]);branch(c4a[1],[[.552,.65],[.575,.65],[.598,.65]]);
+    const rrKids=branch(rightRoot,[[.765,.27],[.795,.27,'face'],[.818,.27],[.842,.27,'face'],[.864,.27],[.888,.27,'face'],[.91,.27,'face'],[.932,.27],[.953,.27,'face'],[.977,.27]]);
+    const rMid=addNode(.703,.39,rightRoot,2);const r1=branch(rMid,[[.61,.51],[.635,.51,'face'],[.66,.51],[.686,.51],[.712,.51,'face'],[.735,.51],[.758,.51],[.781,.51]]);
+    branch(r1[4],[[.71,.63],[.732,.63],[.754,.63]]);branch(rrKids[1],[[.785,.39],[.806,.39,'face']]);branch(rrKids[3],[[.835,.39],[.855,.39,'face']]);
+    for(const n of nodes)if(n.level>=3&&(n.id%4===0||n.id%7===0))n.kind='ring';
+    layout();updateUI();
   }
 
   function buildRandom(){
-    clearAll();
-    const root=addNode(.5,.06,null,0);
-    const firstCount=randInt(2,4);
-    let frontier=[root];
-    let made=1;
-    for(let level=1; level<=4; level++){
+    clearAll();const root=addNode(.5,.06,null,0);let frontier=[root],made=1;const firstCount=randInt(2,4);
+    for(let level=1;level<=4;level++){
       const next=[];
-      const available=Math.max(8, Math.min(22, 46-made));
       for(const p of frontier){
-        if(made>=46) break;
-        let count = level===1 ? firstCount : randInt(1, Math.min(5, available));
-        if(level===4) count=randInt(1,3);
-        for(let i=0;i<count && made<46;i++){
-          const id=addNode(0,0,p,level,(Math.random()<.20?'face':Math.random()<.18?'ring':'blue'));
-          next.push(id); made++;
-        }
+        let count=level===1?firstCount:randInt(1,level===4?3:4);
+        for(let i=0;i<count&&made<50;i++){const id=addNode(0,0,p,level,Math.random()<.2?'ring':'blue');next.push(id);made++;}
       }
-      frontier=next;
-      if(!frontier.length) break;
+      frontier=next;if(!frontier.length)break;
     }
-    randomTreeLayout(root);
-    layout();
+    randomTreeLayout();layout();updateUI();
   }
 
-  function randomTreeLayout(rootId){
-    const levels=new Map();
-    for(const n of nodes){
-      if(!levels.has(n.level)) levels.set(n.level,[]);
-      levels.get(n.level).push(n);
-    }
+  function randomTreeLayout(){
+    const levels=new Map();for(const n of nodes){if(!levels.has(n.level))levels.set(n.level,[]);levels.get(n.level).push(n)}
     const maxLevel=Math.max(...levels.keys());
-    for(const [level,arr] of levels){
-      const y=.07 + level*(.78/Math.max(1,maxLevel));
-      const margin=.035 + (level===0?.25:0);
-      for(let i=0;i<arr.length;i++){
-        const x=arr.length===1?.5:margin + (1-2*margin)*i/(arr.length-1);
-        arr[i].baseX=x; arr[i].baseY=y;
-      }
-    }
-    // Pull siblings toward their parent to get a more org-chart-like cluster.
-    for(let pass=0;pass<3;pass++){
-      for(let l=maxLevel;l>=1;l--){
-        for(const n of (levels.get(l)||[])){
-          const p=node(n.parent);
-          n.baseX = n.baseX*.72 + p.baseX*.28;
-        }
-      }
-      // Keep each level separated.
-      for(const [level,arr] of levels){
-        arr.sort((a,b)=>a.baseX-b.baseX);
-        const minGap=.018;
-        for(let i=1;i<arr.length;i++) if(arr[i].baseX-arr[i-1].baseX<minGap) arr[i].baseX=arr[i-1].baseX+minGap;
-        const min=arr[0]?.baseX, max=arr[arr.length-1]?.baseX;
-        if(arr.length && max>0.98){
-          const span=max-min||1;
-          for(const n of arr) n.baseX=.02+(n.baseX-min)/span*.96;
-        }
-      }
-    }
+    for(const [level,arr] of levels){const y=.07+level*(.78/Math.max(1,maxLevel)),margin=.035+(level===0?.25:0);for(let i=0;i<arr.length;i++){arr[i].baseX=arr.length===1?.5:margin+(1-2*margin)*i/(arr.length-1);arr[i].baseY=y;}}
+    for(let pass=0;pass<3;pass++){for(let l=maxLevel;l>=1;l--){for(const n of levels.get(l)||[]){const p=node(n.parent);if(p)n.baseX=n.baseX*.72+p.baseX*.28}}}
   }
 
   function layout(){
-    for(const n of nodes){
-      if(!n.detached){
-        n.x=n.baseX*W;
-        n.y=(n.baseY*(H-50))+25;
-      }
-    }
-    updateUI();
+    for(const n of nodes)if(!n.detached){n.x=n.baseX*W;n.y=(n.baseY*(H-60))+28}
+    for(const s of slots){const p=node(s.parent);if(p&&!p.detached){s.x=s.baseX*W;s.y=(s.baseY*(H-60))+28}}
   }
-
-  function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 
   function drawFace(n){
-    const [skin,hair,shirt]=n.palette;
-    const r=n.radius;
-    ctx.save();
-    ctx.translate(n.x,n.y); ctx.rotate(n.rot);
-    ctx.beginPath();ctx.arc(0,0,r-1,0,Math.PI*2);ctx.clip();
-    ctx.fillStyle=skin;ctx.fillRect(-r,-r,r*2,r*2);
-    ctx.fillStyle=shirt;ctx.fillRect(-r,r*.55,r*2,r);
-    ctx.fillStyle=hair;
-    if(n.hair==='cap'){
-      ctx.fillRect(-r,-r,r*2,r*.55); ctx.fillRect(-r,-r*.25,r*.45,r*.65);
-    }else if(n.hair==='bob'){
-      ctx.fillRect(-r,-r,r*2,r*.5);ctx.fillRect(-r,-r,r*.35,r*1.6);ctx.fillRect(r*.65,-r,r*.35,r*1.6);
-    }else if(n.hair==='spike'){
-      ctx.beginPath();ctx.moveTo(-r,r*.05);ctx.lineTo(-r*.8,-r*.8);ctx.lineTo(-r*.4,-r*.45);ctx.lineTo(0,-r);ctx.lineTo(r*.35,-r*.4);ctx.lineTo(r*.7,-r*.8);ctx.lineTo(r,r*.05);ctx.fill();
-    }else if(n.hair==='side'){
-      ctx.beginPath();ctx.arc(0,-r*.25,r*.95,Math.PI,Math.PI*2);ctx.fill();
-      ctx.fillRect(-r,-r*.2,r*.42,r*.75);
-    }else if(n.hair==='bun'){
-      ctx.beginPath();ctx.arc(0,-r*.72,r*.4,0,Math.PI*2);ctx.fill();
-      ctx.fillRect(-r,-r,r*2,r*.65);
-    }else{
-      ctx.fillRect(-r,-r,r*2,r*.35);
-    }
-    ctx.fillStyle='#111827';
-    ctx.fillRect(-r*.38,-r*.05,2.6,2.6);ctx.fillRect(r*.23,-r*.05,2.6,2.6);
-    ctx.fillStyle='rgba(90,40,30,.75)';ctx.fillRect(-1,r*.18,2.5,1.8);
-    ctx.restore();
+    const [skin,hair,shirt]=n.palette,r=n.radius;ctx.save();ctx.translate(n.x,n.y);ctx.rotate(n.rot);ctx.beginPath();ctx.arc(0,0,r-1,0,Math.PI*2);ctx.clip();
+    ctx.fillStyle=skin;ctx.fillRect(-r,-r,r*2,r*2);ctx.fillStyle=shirt;ctx.fillRect(-r,r*.55,r*2,r);ctx.fillStyle=hair;
+    if(n.hair==='cap'){ctx.fillRect(-r,-r,r*2,r*.55);ctx.fillRect(-r,-r*.25,r*.45,r*.65)}
+    else if(n.hair==='bob'){ctx.fillRect(-r,-r,r*2,r*.5);ctx.fillRect(-r,-r,r*.35,r*1.6);ctx.fillRect(r*.65,-r,r*.35,r*1.6)}
+    else if(n.hair==='spike'){ctx.beginPath();ctx.moveTo(-r,r*.05);ctx.lineTo(-r*.8,-r*.8);ctx.lineTo(-r*.4,-r*.45);ctx.lineTo(0,-r);ctx.lineTo(r*.35,-r*.4);ctx.lineTo(r*.7,-r*.8);ctx.lineTo(r,r*.05);ctx.fill()}
+    else if(n.hair==='side'){ctx.beginPath();ctx.arc(0,-r*.25,r*.95,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(-r,-r*.2,r*.42,r*.75)}
+    else if(n.hair==='bun'){ctx.beginPath();ctx.arc(0,-r*.72,r*.4,0,Math.PI*2);ctx.fill();ctx.fillRect(-r,-r,r*2,r*.65)}
+    else ctx.fillRect(-r,-r,r*2,r*.35);
+    ctx.fillStyle='#111827';ctx.fillRect(-r*.38,-r*.05,2.6,2.6);ctx.fillRect(r*.23,-r*.05,2.6,2.6);ctx.fillStyle='rgba(90,40,30,.75)';ctx.fillRect(-1,r*.18,2.5,1.8);ctx.restore();
   }
 
-  function drawNode(n){
-    if(n.alpha<=0) return;
-    ctx.save();ctx.globalAlpha=n.alpha;
-    drawFace(n);
-    if(n.kind==='ring'){
-      ctx.beginPath();ctx.arc(n.x,n.y,n.radius+2,0,Math.PI*2);
-      ctx.lineWidth=5;ctx.strokeStyle='#f97316';ctx.stroke();
-    }
-    ctx.restore();
-  }
+  function drawNode(n){if(n.alpha<=0)return;ctx.save();ctx.globalAlpha=n.alpha;drawFace(n);if(n.kind==='ring'){ctx.beginPath();ctx.arc(n.x,n.y,n.radius+2,0,Math.PI*2);ctx.lineWidth=5;ctx.strokeStyle='#f97316';ctx.stroke()}ctx.restore()}
 
   function draw(){
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-
-    // edges
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
     ctx.lineCap='round';
-    for(const e of edges){
-      if(e.cut) continue;
-      const a=node(e.a),b=node(e.b);
-      if(!a||!b||a.alpha<=0||b.alpha<=0) continue;
-      ctx.save(); ctx.globalAlpha=Math.min(a.alpha,b.alpha);
-      ctx.strokeStyle='#bfd7f1'; ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-      // larger invisible hit target concept reflected visually on hover/slash by generous collision math
-      ctx.restore();
+    for(const e of edges){if(e.cut)continue;const a=node(e.a),b=node(e.b);if(!a||!b||a.detached||b.detached)continue;ctx.strokeStyle='#bfd7f1';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+    // Reattachment slots are intentionally invisible.
+    for(const n of nodes)drawNode(n);
+    for(const p of particles){ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color||'#f97316';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.restore()}
+    if(slashTrail.length>1){ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='rgba(239,68,68,.82)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(slashTrail[0].x,slashTrail[0].y);for(let i=1;i<slashTrail.length;i++)ctx.lineTo(slashTrail[i].x,slashTrail[i].y);ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.4;ctx.stroke();ctx.restore()}
+  }
+
+  function getChildren(id){return edges.filter(e=>!e.cut&&e.a===id).map(e=>e.b)}
+  function collectSubtree(id,out=[]){out.push(id);for(const c of getChildren(id))collectSubtree(c,out);return out}
+
+  function action(points,msg){
+    const now=performance.now();combo=(now-lastActionAt<1100)?Math.min(10,combo+1):1;lastActionAt=now;const gained=Math.round(points*combo);score+=gained;if(msg)flash(`+${gained}  •  ${msg}`);updateUI();return gained;
+  }
+
+  function createSlotFor(childId){
+    const child=node(childId);if(!child)return;const e=edgeByChild(childId);if(!e)return;
+    slots.push({id:nextSlotId++,parent:e.a,baseX:child.baseX,baseY:child.baseY,x:child.x,y:child.y,filled:false,age:0,expiresAt:14,kind:child.kind,level:child.level});
+  }
+
+  function cutEdge(edge,x,y){
+    if(edge.cut)return;edge.cut=true;createSlotFor(edge.b);const ids=collectSubtree(edge.b,[]);growthCredits+=Math.max(1,Math.ceil(ids.length/2));const subtreeBonus=15+ids.length*ids.length*3;action(subtreeBonus,`${ids.length} dropped`);
+    for(const id of ids){const n=node(id);if(!n||n.detached)continue;n.detached=true;n.wasKicked=false;n.vy=reducedMotion?0:60+Math.random()*50;n.vx=reducedMotion?0:(Math.random()-.5)*70;n.rot=0;n.alpha=1;n.bounces=0}
+    burst(x,y,Math.min(20,6+ids.length),'#f97316');
+  }
+
+  function reattach(n,s){
+    // A freshly-cut head starts exactly on its old slot, so it must not snap back immediately.
+    // Only a head the player has deliberately kicked upward can reattach.
+    if(!n.detached||!n.wasKicked||n.vy>=-25||s.filled||s.age>=s.expiresAt)return false;const p=node(s.parent);if(!p||p.detached)return false;
+    const oldEdge=edgeByChild(n.id);if(oldEdge)oldEdge.cut=true;
+    n.detached=false;n.wasKicked=false;n.parent=s.parent;n.level=s.level;n.baseX=s.baseX;n.baseY=s.baseY;n.x=s.x;n.y=s.y;n.vx=n.vy=0;n.rot=0;n.alpha=1;
+    edges.push({id:nextEdgeId++,a:s.parent,b:n.id,cut:false});s.filled=true;action(35,'reattached');burst(s.x,s.y,8,'#16a34a');return true;
+  }
+
+  function liveChildren(id){return edges.filter(e=>!e.cut&&e.a===id).map(e=>node(e.b)).filter(n=>n&&!n.detached&&n.alpha>0)}
+
+  function canPlaceGrowth(x,y){
+    if(x<.025||x>.975||y<.08||y>.9)return false;
+    for(const n of nodes){
+      if(n.detached||n.alpha<=0)continue;
+      const dx=(n.baseX-x)*W,dy=(n.baseY-y)*(H-60);
+      if(Math.hypot(dx,dy)<30)return false;
     }
+    return true;
+  }
 
-    // nodes
-    const sorted=[...nodes].sort((a,b)=>a.detached-b.detached);
-    for(const n of sorted) drawNode(n);
-
-    // particles
-    for(const p of particles){
-      ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle='#f97316';
-      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.restore();
+  function growElsewhere(){
+    if(growthCredits<=0)return false;
+    const candidates=nodes.filter(n=>!n.detached&&n.alpha>0&&n.level<7&&n.baseY<.82&&liveChildren(n.id).length<4);
+    if(!candidates.length)return false;
+    candidates.sort((a,b)=>liveChildren(a.id).length-liveChildren(b.id).length || Math.random()-.5);
+    const pool=candidates.slice(0,Math.max(1,Math.ceil(candidates.length*.55)));
+    const p=pool[Math.floor(Math.random()*pool.length)];
+    const childCount=liveChildren(p.id).length;
+    for(let attempt=0;attempt<14;attempt++){
+      const spread=.04+Math.random()*.055;
+      const dir=((childCount+attempt)%2===0?-1:1);
+      const x=Math.max(.025,Math.min(.975,p.baseX+dir*spread+(Math.random()-.5)*.025));
+      const y=Math.min(.9,p.baseY+.09+Math.random()*.055);
+      if(!canPlaceGrowth(x,y))continue;
+      const kind=Math.random()<.14?'ring':'blue';
+      const id=addNode(x,y,p.id,p.level+1,kind),n=node(id);
+      n.x=p.x;n.y=p.y;n.spawnT=0;
+      growthCredits--;action(10,'new growth');burst(p.x,p.y,5,'#16a34a');
+      return true;
     }
-
-    // slash trail
-    if(slashTrail.length>1){
-      ctx.save();
-      ctx.lineCap='round';ctx.lineJoin='round';
-      ctx.strokeStyle='rgba(239,68,68,.82)';ctx.lineWidth=4;
-      ctx.beginPath();ctx.moveTo(slashTrail[0].x,slashTrail[0].y);
-      for(let i=1;i<slashTrail.length;i++)ctx.lineTo(slashTrail[i].x,slashTrail[i].y);
-      ctx.stroke();
-      ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.4;ctx.stroke();
-      ctx.restore();
-    }
+    return false;
   }
 
-  function getChildren(id){
-    return edges.filter(e=>!e.cut && e.a===id).map(e=>e.b);
+  function kickNode(n,dx,dy,speed){
+    if(!n.detached)return;const len=Math.hypot(dx,dy)||1;const upBias=-Math.abs(dy||1);const dirX=dx/len;const dirY=upBias/len;n.wasKicked=true;n.vx+=dirX*speed;n.vy=Math.min(n.vy,dirY*speed-260);action(8,'kick');burst(n.x,n.y,4,'#38bdf8');
   }
 
-  function collectSubtree(id, out=[]){
-    out.push(id);
-    for(const c of getChildren(id)) collectSubtree(c,out);
-    return out;
-  }
+  function burst(x,y,count,color){for(let i=0;i<count;i++)particles.push({x,y,vx:(Math.random()-.5)*140,vy:(Math.random()-.5)*120-30,r:1.5+Math.random()*2.4,alpha:1,color})}
 
-  function cutEdge(edge, slashX, slashY){
-    if(edge.cut) return;
-    edge.cut=true;
-    const ids=collectSubtree(edge.b,[]);
-    const now=performance.now();
-    combo = (now-lastCutAt<900) ? Math.min(8,combo+1) : 1;
-    lastCutAt=now;
-    const subtreeBonus=Math.round((ids.length*ids.length)*3);
-    const gained=(15 + subtreeBonus)*combo;
-    score += gained;
-
-    for(const id of ids){
-      const n=node(id);
-      if(!n||n.detached) continue;
-      n.detached=true;
-      n.vy=reducedMotion?0:60+Math.random()*35;
-      n.vx=reducedMotion?0:(Math.random()-.5)*45;
-      n.rot=0;
-      detached.push(id);
-    }
-    for(let i=0;i<Math.min(18,5+ids.length);i++){
-      particles.push({x:slashX+(Math.random()-.5)*18,y:slashY+(Math.random()-.5)*18,
-        vx:(Math.random()-.5)*120,vy:(Math.random()-.5)*100-30,r:1.5+Math.random()*2.5,alpha:1});
-    }
-    flash(`+${gained}  •  ${ids.length} orb${ids.length===1?'':'s'} dropped`);
-    updateUI();
-  }
-
-  function segmentDistance(px,py,x1,y1,x2,y2){
-    const vx=x2-x1, vy=y2-y1;
-    const wx=px-x1, wy=py-y1;
-    const c1=vx*wx+vy*wy;
-    if(c1<=0) return Math.hypot(px-x1,py-y1);
-    const c2=vx*vx+vy*vy;
-    if(c2<=c1) return Math.hypot(px-x2,py-y2);
-    const t=c1/c2;
-    return Math.hypot(px-(x1+t*vx),py-(y1+t*vy));
-  }
-
-  function segIntersectsThickSeg(ax,ay,bx,by,cx,cy,dx,dy,thickness){
-    // Check endpoint distances plus closest crossing.
-    if(linesIntersect(ax,ay,bx,by,cx,cy,dx,dy)) return true;
-    return Math.min(
-      segmentDistance(ax,ay,cx,cy,dx,dy),
-      segmentDistance(bx,by,cx,cy,dx,dy),
-      segmentDistance(cx,cy,ax,ay,bx,by),
-      segmentDistance(dx,dy,ax,ay,bx,by)
-    ) <= thickness;
-  }
-
-  function linesIntersect(ax,ay,bx,by,cx,cy,dx,dy){
-    const o=(x1,y1,x2,y2,x3,y3)=>(x2-x1)*(y3-y1)-(y2-y1)*(x3-x1);
-    const o1=o(ax,ay,bx,by,cx,cy), o2=o(ax,ay,bx,by,dx,dy);
-    const o3=o(cx,cy,dx,dy,ax,ay), o4=o(cx,cy,dx,dy,bx,by);
-    return (o1===0||o2===0||Math.sign(o1)!==Math.sign(o2)) &&
-           (o3===0||o4===0||Math.sign(o3)!==Math.sign(o4));
-  }
+  function segmentDistance(px,py,x1,y1,x2,y2){const vx=x2-x1,vy=y2-y1,wx=px-x1,wy=py-y1,c1=vx*wx+vy*wy;if(c1<=0)return Math.hypot(px-x1,py-y1);const c2=vx*vx+vy*vy;if(c2<=c1)return Math.hypot(px-x2,py-y2);const t=c1/c2;return Math.hypot(px-(x1+t*vx),py-(y1+t*vy))}
+  function linesIntersect(ax,ay,bx,by,cx,cy,dx,dy){const o=(x1,y1,x2,y2,x3,y3)=>(x2-x1)*(y3-y1)-(y2-y1)*(x3-x1),o1=o(ax,ay,bx,by,cx,cy),o2=o(ax,ay,bx,by,dx,dy),o3=o(cx,cy,dx,dy,ax,ay),o4=o(cx,cy,dx,dy,bx,by);return(o1===0||o2===0||Math.sign(o1)!==Math.sign(o2))&&(o3===0||o4===0||Math.sign(o3)!==Math.sign(o4))}
+  function segIntersectsThickSeg(ax,ay,bx,by,cx,cy,dx,dy,t){if(linesIntersect(ax,ay,bx,by,cx,cy,dx,dy))return true;return Math.min(segmentDistance(ax,ay,cx,cy,dx,dy),segmentDistance(bx,by,cx,cy,dx,dy),segmentDistance(cx,cy,ax,ay,bx,by),segmentDistance(dx,dy,ax,ay,bx,by))<=t}
 
   function slash(a,b){
-    // Branches deliberately get a fat ~14px hitbox so slashing feels easy.
+    const dx=b.x-a.x,dy=b.y-a.y,swipeSpeed=Math.min(700,220+Math.hypot(dx,dy)*7);
+
+    // Make endpoints just as easy to cut as big subtrees: swiping through any attached
+    // non-root head cuts the edge directly above it, even when the visible twig is tiny.
+    let nodeTarget=null,nodeDist=Infinity;
+    for(const n of nodes){
+      if(n.detached||n.alpha<=0||n.parent==null)continue;
+      const e=edgeByChild(n.id);
+      if(!e||e.cut)continue;
+      const d=segmentDistance(n.x,n.y,a.x,a.y,b.x,b.y);
+      if(d<=n.radius+9&&d<nodeDist){nodeTarget=n;nodeDist=d}
+    }
+    if(nodeTarget){
+      const e=edgeByChild(nodeTarget.id);
+      cutEdge(e,nodeTarget.x,nodeTarget.y);
+      return;
+    }
+
     let best=null,bestDist=Infinity;
     for(const e of edges){
-      if(e.cut) continue;
+      if(e.cut)continue;
       const n1=node(e.a),n2=node(e.b);
-      if(!n1||!n2||n1.detached||n2.detached) continue;
-      if(segIntersectsThickSeg(a.x,a.y,b.x,b.y,n1.x,n1.y,n2.x,n2.y,14)){
-        const mx=(n1.x+n2.x)/2,my=(n1.y+n2.y)/2;
-        const d=segmentDistance(mx,my,a.x,a.y,b.x,b.y);
-        if(d<bestDist){best=e;bestDist=d;}
+      if(!n1||!n2||n1.detached||n2.detached)continue;
+      if(segIntersectsThickSeg(a.x,a.y,b.x,b.y,n1.x,n1.y,n2.x,n2.y,16)){
+        const mx=(n1.x+n2.x)/2,my=(n1.y+n2.y)/2,d=segmentDistance(mx,my,a.x,a.y,b.x,b.y);
+        if(d<bestDist){best=e;bestDist=d}
       }
     }
-    if(best) cutEdge(best,(a.x+b.x)/2,(a.y+b.y)/2);
-  }
-
-  function pointFromEvent(ev){
-    const r=canvas.getBoundingClientRect();
-    return {x:ev.clientX-r.left,y:ev.clientY-r.top};
-  }
-
-  canvas.addEventListener('pointerdown',ev=>{
-    pointerDown=true;canvas.setPointerCapture(ev.pointerId);
-    lastPointer=pointFromEvent(ev); slashTrail=[lastPointer];
-  });
-  canvas.addEventListener('pointermove',ev=>{
-    if(!pointerDown)return;
-    const p=pointFromEvent(ev);
-    if(lastPointer && Math.hypot(p.x-lastPointer.x,p.y-lastPointer.y)>3){
-      slash(lastPointer,p);
-      lastPointer=p;slashTrail.push(p);
-      if(slashTrail.length>10)slashTrail.shift();
+    if(best){
+      cutEdge(best,(a.x+b.x)/2,(a.y+b.y)/2);
+      return;
     }
-  });
-  const endPointer=()=>{pointerDown=false;lastPointer=null;setTimeout(()=>slashTrail=[],100)};
-  canvas.addEventListener('pointerup',endPointer);
-  canvas.addEventListener('pointercancel',endPointer);
 
-  sameBtn.addEventListener('click',()=>{mode='same';sameBtn.classList.add('active');randomBtn.classList.remove('active');buildSame();});
-  randomBtn.addEventListener('click',()=>{mode='random';randomBtn.classList.add('active');sameBtn.classList.remove('active');buildRandom();});
-  resetBtn.addEventListener('click',()=> mode==='same'?buildSame():buildRandom());
+    // If the swipe didn't hit the tree, use it to kick loose heads.
+    for(const n of nodes){
+      if(!n.detached||n.alpha<=0)continue;
+      if(segmentDistance(n.x,n.y,a.x,a.y,b.x,b.y)<=n.radius+10)kickNode(n,dx,dy,swipeSpeed);
+    }
+  }
+
+  function pointFromEvent(ev){const r=canvas.getBoundingClientRect();return{x:ev.clientX-r.left,y:ev.clientY-r.top}}
+  canvas.addEventListener('pointerdown',ev=>{pointerDown=true;canvas.setPointerCapture(ev.pointerId);lastPointer=pointFromEvent(ev);slashTrail=[lastPointer]});
+  canvas.addEventListener('pointermove',ev=>{if(!pointerDown)return;const p=pointFromEvent(ev);if(lastPointer&&Math.hypot(p.x-lastPointer.x,p.y-lastPointer.y)>3){slash(lastPointer,p);lastPointer=p;slashTrail.push(p);if(slashTrail.length>10)slashTrail.shift()}});
+  const endPointer=()=>{pointerDown=false;lastPointer=null;setTimeout(()=>slashTrail=[],90)};canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);
+
+  sameBtn.addEventListener('click',()=>{mode='same';sameBtn.classList.add('active');randomBtn.classList.remove('active');buildSame()});
+  randomBtn.addEventListener('click',()=>{mode='random';randomBtn.classList.add('active');sameBtn.classList.remove('active');buildRandom()});
+  resetBtn.addEventListener('click',()=>mode==='same'?buildSame():buildRandom());
 
   function updateUI(){
-    scoreEl.textContent=score.toLocaleString();
-    comboEl.textContent='x'+combo;
-    remainingEl.textContent=nodes.filter(n=>!n.detached && n.parent!=null).length;
+    scoreEl.textContent=score.toLocaleString();comboEl.textContent='x'+combo;looseEl.textContent=nodes.filter(n=>n.detached&&n.alpha>0).length;
   }
-
-  let toastTimer;
-  function flash(msg){
-    toast.textContent=msg;toast.style.opacity='1';
-    clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.style.opacity='0',850);
-  }
+  let toastTimer;function flash(msg){toast.textContent=msg;toast.style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.style.opacity='0',700)}
 
   let prev=performance.now();
   function tick(t){
     const dt=Math.min(.033,(t-prev)/1000);prev=t;
-    if(performance.now()-lastCutAt>1100 && combo!==1){combo=1;updateUI();}
-    for(const id of detached){
-      const n=node(id);if(!n||n.alpha<=0)continue;
-      if(reducedMotion){n.alpha-=dt*2.8;continue;}
-      n.vy+=420*dt;n.x+=n.vx*dt;n.y+=n.vy*dt;n.rot+=n.vx*.002*dt;n.alpha-=dt*.62;
-    }
-    for(const p of particles){
-      p.vy+=220*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.alpha-=dt*1.8;
-    }
-    particles=particles.filter(p=>p.alpha>0);
-    draw();
-    requestAnimationFrame(tick);
+      if(performance.now()-lastActionAt>1300&&combo!==1){combo=1;updateUI()}
+      for(const s of slots){if(!s.filled)s.age+=dt}
+      growthTimer+=dt;
+      // Aggressive rebuilding: the more of the tree is missing, the faster it throws out
+      // new branches elsewhere. Large cuts also bank plenty of future growth.
+      const livingCount=nodes.filter(n=>!n.detached&&n.alpha>0).length;
+      const desiredCount=mode==='same'?42:36;
+      const deficit=Math.max(0,desiredCount-livingCount);
+
+      // Never let a heavily hacked-down tree sit almost empty waiting for credits.
+      // Missing population continuously turns into growth pressure.
+      if(deficit>0){
+        const minCredits = deficit>24 ? 10 : deficit>14 ? 7 : deficit>7 ? 4 : 2;
+        if(growthCredits<minCredits) growthCredits=minCredits;
+      }
+
+      if(growthCredits>0&&growthTimer>=nextGrowthAt){
+        growthTimer=0;
+
+        // When most of the tree is gone, several branches can burst out in one beat.
+        const burstCount = deficit>24 ? 4 : deficit>14 ? 3 : deficit>7 ? 2 : 1;
+        for(let i=0;i<burstCount&&growthCredits>0;i++) growElsewhere();
+
+        // Very sparse trees regrow extremely quickly; near-full trees calm down.
+        nextGrowthAt = deficit>24 ? .22+Math.random()*.16
+                     : deficit>14 ? .3+Math.random()*.2
+                     : deficit>7  ? .42+Math.random()*.24
+                                  : .7+Math.random()*.45;
+      }
+      const floor=H-18;
+      for(const n of nodes){
+        if(n.spawnT!==undefined&&!n.detached){
+          n.spawnT=Math.min(1,n.spawnT+dt*.9);
+          const targetX=n.baseX*W,targetY=(n.baseY*(H-60))+28;
+          const ease=1-Math.pow(1-n.spawnT,3);
+          const p=node(n.parent);
+          const startX=p?p.x:targetX,startY=p?p.y:targetY;
+          n.x=startX+(targetX-startX)*ease;n.y=startY+(targetY-startY)*ease;
+          if(n.spawnT>=1)delete n.spawnT;
+        }
+        if(!n.detached||n.alpha<=0)continue;
+        if(reducedMotion){n.y+=80*dt}else{n.vy+=430*dt;n.x+=n.vx*dt;n.y+=n.vy*dt;n.rot+=n.vx*.0022*dt}
+        if(n.x<n.radius){n.x=n.radius;n.vx=Math.abs(n.vx)*.65}else if(n.x>W-n.radius){n.x=W-n.radius;n.vx=-Math.abs(n.vx)*.65}
+        if(n.y>floor-n.radius){
+          n.y=floor-n.radius;
+          if(Math.abs(n.vy)>65&&n.bounces<4){n.vy=-Math.abs(n.vy)*.46;n.vx*=.82;n.bounces++}else{n.vy=0;n.vx*=Math.pow(.22,dt)}
+        }
+        if(n.wasKicked&&n.vy< -25){for(const s of slots){if(s.filled||s.age>=s.expiresAt)continue;const p=node(s.parent);if(!p||p.detached)continue;if(Math.hypot(n.x-s.x,n.y-s.y)<24){if(reattach(n,s))break}}}
+        if(n.y>=floor-n.radius&&Math.abs(n.vy)<8&&Math.abs(n.vx)<6){n.alpha-=dt*.16;if(n.alpha<=0){action(0,'lost')}}
+      }
+      for(const p of particles){p.vy+=220*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.alpha-=dt*1.8}
+      particles=particles.filter(p=>p.alpha>0);updateUI();
+    draw();requestAnimationFrame(tick);
   }
 
-  new ResizeObserver(resize).observe(document.getElementById('wrap'));
-  buildSame();resize();requestAnimationFrame(tick);
+  new ResizeObserver(resize).observe(document.getElementById('wrap'));buildSame();resize();requestAnimationFrame(tick);
 })();
 </script>
 </body>

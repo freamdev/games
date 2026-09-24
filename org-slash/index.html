@@ -86,8 +86,8 @@
       <div class="panel-title">CONTROL PANEL</div>
       <div class="panel-rule"></div>
       <div class="stats">
-        <div class="stat"><span class="stat-label">Score</span><b class="stat-value" id="score">0</b></div>
-        <div class="stat"><span class="stat-label">Combo</span><b class="stat-value" id="combo">x1</b></div>
+        <div class="stat"><span class="stat-label">Monthly total pay</span><b class="stat-value" id="payroll">0 HUF</b></div>
+        <div class="stat"><span class="stat-label">Employees</span><b class="stat-value" id="employees">0</b></div>
         <div class="stat"><span class="stat-label">Loose</span><b class="stat-value" id="loose">0</b></div>
       </div>
       <div class="actions">
@@ -101,13 +101,13 @@
 <script>
 (() => {
   const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
-  const scoreEl=document.getElementById('score'),comboEl=document.getElementById('combo'),looseEl=document.getElementById('loose');
+  const payrollEl=document.getElementById('payroll'),employeesEl=document.getElementById('employees'),looseEl=document.getElementById('loose');
   const toast=document.getElementById('toast'),sameBtn=document.getElementById('sameBtn'),randomBtn=document.getElementById('randomBtn');
   const resetBtn=document.getElementById('resetBtn');
 
   const DPR=Math.min(2,window.devicePixelRatio||1);
-  let W=1,H=1,nodes=[],edges=[],slots=[],particles=[];
-  let mode='same',score=0,combo=1,lastActionAt=0;
+  let W=1,H=1,nodes=[],edges=[],slots=[],particles=[],floatingTexts=[];
+  let mode='same',lastActionAt=0;
   let growthCredits=0,growthTimer=0,nextGrowthAt=.45+Math.random()*.35;
   let pointerDown=false,lastPointer=null,slashTrail=[];
   let nextNodeId=1,nextEdgeId=1,nextSlotId=1;
@@ -126,7 +126,8 @@
 
   function addNode(x,y,parent=null,level=0,kind='blue'){
     const id=nextNodeId++,seed=(id*9301+49297)%233280;
-    nodes.push({id,x:0,y:0,baseX:x,baseY:y,parent,level,kind,radius:level===0?13:12,detached:false,vx:0,vy:0,rot:0,alpha:1,
+    const salary=300000 + (seed % 121) * 10000;
+    nodes.push({id,x:0,y:0,baseX:x,baseY:y,parent,level,kind,radius:level===0?13:12,detached:false,vx:0,vy:0,rot:0,alpha:1,salary,
       palette:facePalettes[seed%facePalettes.length],hair:hairStyles[seed%hairStyles.length],eye:seed%3,bounces:0});
     if(parent!=null) edges.push({id:nextEdgeId++,a:parent,b:id,cut:false});
     return id;
@@ -137,7 +138,7 @@
   function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 
   function clearAll(){
-    nodes=[];edges=[];slots=[];particles=[];score=0;combo=1;lastActionAt=0;growthCredits=0;growthTimer=0;nextGrowthAt=.45+Math.random()*.35;nextNodeId=1;nextEdgeId=1;nextSlotId=1;slashTrail=[];
+    nodes=[];edges=[];slots=[];particles=[];floatingTexts=[];lastActionAt=0;growthCredits=0;growthTimer=0;nextGrowthAt=.45+Math.random()*.35;nextNodeId=1;nextEdgeId=1;nextSlotId=1;slashTrail=[];
   }
 
   function buildSame(){
@@ -206,6 +207,7 @@
     // Reattachment slots are intentionally invisible.
     for(const n of nodes)drawNode(n);
     for(const p of particles){ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color||'#f97316';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.restore()}
+    for(const f of floatingTexts){ctx.save();ctx.globalAlpha=f.alpha;ctx.fillStyle=f.color;ctx.font='700 15px Segoe UI, Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(f.text,f.x,f.y);ctx.restore()}
     if(slashTrail.length>1){ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='rgba(239,68,68,.82)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(slashTrail[0].x,slashTrail[0].y);for(let i=1;i<slashTrail.length;i++)ctx.lineTo(slashTrail[i].x,slashTrail[i].y);ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1.4;ctx.stroke();ctx.restore()}
   }
 
@@ -213,7 +215,15 @@
   function collectSubtree(id,out=[]){out.push(id);for(const c of getChildren(id))collectSubtree(c,out);return out}
 
   function action(points,msg){
-    const now=performance.now();combo=(now-lastActionAt<1100)?Math.min(10,combo+1):1;lastActionAt=now;const gained=Math.round(points*combo);score+=gained;if(msg)flash(`+${gained}  •  ${msg}`);updateUI();return gained;
+    lastActionAt=performance.now();
+    if(msg)flash(msg);
+    updateUI();
+    return 0;
+  }
+
+  function money(v){return Math.round(v).toLocaleString('hu-HU')+' HUF'}
+  function floatMoney(x,y,amount,color){
+    floatingTexts.push({x,y,text:(amount<0?'−':'+')+money(Math.abs(amount)),color,alpha:1,vy:-28});
   }
 
   function createSlotFor(childId){
@@ -222,8 +232,12 @@
   }
 
   function cutEdge(edge,x,y){
-    if(edge.cut)return;edge.cut=true;createSlotFor(edge.b);const ids=collectSubtree(edge.b,[]);growthCredits+=Math.max(1,Math.ceil(ids.length/2));const subtreeBonus=15+ids.length*ids.length*3;action(subtreeBonus,`${ids.length} dropped`);
+    if(edge.cut)return;edge.cut=true;createSlotFor(edge.b);const ids=collectSubtree(edge.b,[]);growthCredits+=Math.max(1,Math.ceil(ids.length/2));
+    const firedPay=ids.reduce((sum,id)=>{const n=node(id);return sum+(n&&!n.detached?n.salary:0)},0);
     for(const id of ids){const n=node(id);if(!n||n.detached)continue;n.detached=true;n.wasKicked=false;n.vy=reducedMotion?0:60+Math.random()*50;n.vx=reducedMotion?0:(Math.random()-.5)*70;n.rot=0;n.alpha=1;n.bounces=0}
+    if(firedPay>0)floatMoney(x,y,-firedPay,'#b91c1c');
+    flash(`${ids.length} fired • −${money(firedPay)}`);
+    updateUI();
     burst(x,y,Math.min(20,6+ids.length),'#f97316');
   }
 
@@ -233,7 +247,7 @@
     if(!n.detached||!n.wasKicked||n.vy>=-25||s.filled||s.age>=s.expiresAt)return false;const p=node(s.parent);if(!p||p.detached)return false;
     const oldEdge=edgeByChild(n.id);if(oldEdge)oldEdge.cut=true;
     n.detached=false;n.wasKicked=false;n.parent=s.parent;n.level=s.level;n.baseX=s.baseX;n.baseY=s.baseY;n.x=s.x;n.y=s.y;n.vx=n.vy=0;n.rot=0;n.alpha=1;
-    edges.push({id:nextEdgeId++,a:s.parent,b:n.id,cut:false});s.filled=true;action(35,'reattached');burst(s.x,s.y,8,'#16a34a');return true;
+    edges.push({id:nextEdgeId++,a:s.parent,b:n.id,cut:false});s.filled=true;floatMoney(s.x,s.y,n.salary,'#166534');flash(`Rehired • +${money(n.salary)}`);updateUI();burst(s.x,s.y,8,'#16a34a');return true;
   }
 
   function liveChildren(id){return edges.filter(e=>!e.cut&&e.a===id).map(e=>node(e.b)).filter(n=>n&&!n.detached&&n.alpha>0)}
@@ -296,14 +310,14 @@
       const kind=Math.random()<.14?'ring':'blue';
       const id=addNode(x,y,p.id,p.level+1,kind),n=node(id);
       n.x=p.x;n.y=p.y;n.spawnT=0;
-      growthCredits--;action(10,'new growth');burst(p.x,p.y,5,'#16a34a');
+      growthCredits--;floatMoney(p.x,p.y,n.salary,'#166534');updateUI();burst(p.x,p.y,5,'#16a34a');
       return true;
     }
     return false;
   }
 
   function kickNode(n,dx,dy,speed){
-    if(!n.detached)return;const len=Math.hypot(dx,dy)||1;const upBias=-Math.abs(dy||1);const dirX=dx/len;const dirY=upBias/len;n.wasKicked=true;n.vx+=dirX*speed;n.vy=Math.min(n.vy,dirY*speed-260);action(8,'kick');burst(n.x,n.y,4,'#38bdf8');
+    if(!n.detached)return;const len=Math.hypot(dx,dy)||1;const upBias=-Math.abs(dy||1);const dirX=dx/len;const dirY=upBias/len;n.wasKicked=true;n.vx+=dirX*speed;n.vy=Math.min(n.vy,dirY*speed-260);burst(n.x,n.y,4,'#38bdf8');
   }
 
   function burst(x,y,count,color){for(let i=0;i<count;i++)particles.push({x,y,vx:(Math.random()-.5)*140,vy:(Math.random()-.5)*120-30,r:1.5+Math.random()*2.4,alpha:1,color})}
@@ -363,14 +377,17 @@
   resetBtn.addEventListener('click',()=>mode==='same'?buildSame():buildRandom());
 
   function updateUI(){
-    scoreEl.textContent=score.toLocaleString();comboEl.textContent='x'+combo;looseEl.textContent=nodes.filter(n=>n.detached&&n.alpha>0).length;
+    const active=nodes.filter(n=>!n.detached&&n.alpha>0);
+    const payroll=active.reduce((sum,n)=>sum+n.salary,0);
+    payrollEl.textContent=money(payroll);
+    employeesEl.textContent=active.length;
+    looseEl.textContent=nodes.filter(n=>n.detached&&n.alpha>0).length;
   }
   let toastTimer;function flash(msg){toast.textContent=msg;toast.style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.style.opacity='0',700)}
 
   let prev=performance.now();
   function tick(t){
     const dt=Math.min(.033,(t-prev)/1000);prev=t;
-      if(performance.now()-lastActionAt>1300&&combo!==1){combo=1;updateUI()}
       for(const s of slots){if(!s.filled)s.age+=dt}
       growthTimer+=dt;
       // Aggressive rebuilding: the more of the tree is missing, the faster it throws out
@@ -418,9 +435,11 @@
           if(Math.abs(n.vy)>65&&n.bounces<4){n.vy=-Math.abs(n.vy)*.46;n.vx*=.82;n.bounces++}else{n.vy=0;n.vx*=Math.pow(.22,dt)}
         }
         if(n.wasKicked&&n.vy< -25){for(const s of slots){if(s.filled||s.age>=s.expiresAt)continue;const p=node(s.parent);if(!p||p.detached)continue;if(Math.hypot(n.x-s.x,n.y-s.y)<24){if(reattach(n,s))break}}}
-        if(n.y>=floor-n.radius&&Math.abs(n.vy)<8&&Math.abs(n.vx)<6){n.alpha-=dt*.16;if(n.alpha<=0){action(0,'lost')}}
+        if(n.y>=floor-n.radius&&Math.abs(n.vy)<8&&Math.abs(n.vx)<6){n.alpha-=dt*.16;if(n.alpha<=0){updateUI()}}
       }
       for(const p of particles){p.vy+=220*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.alpha-=dt*1.8}
+      for(const f of floatingTexts){f.y+=f.vy*dt;f.alpha-=dt*.72}
+      floatingTexts=floatingTexts.filter(f=>f.alpha>0);
       particles=particles.filter(p=>p.alpha>0);updateUI();
     draw();requestAnimationFrame(tick);
   }

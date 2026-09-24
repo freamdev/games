@@ -6,42 +6,97 @@
 <title>Bólya Simulator</title>
 <style>
   :root{
-    --bg:#f8fafc; --ink:#1f2937; --muted:#64748b;
-    --line:#bfd7f1; --accent:#f97316; --danger:#ef4444;
-    --ok:#16a34a; --panel:rgba(255,255,255,.94);
+    --blue:#4b91bf;
+    --blue-dark:#3478a7;
+    --blue-line:#2f78aa;
+    --panel:#fbfbfb;
+    --ink:#20252b;
+    --muted:#5d6872;
+    --danger:#c94141;
+    --line:rgba(255,255,255,.46);
+    --accent:#f97316;
+    --ok:#2f8f66;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden}
-  #app{height:100vh;display:flex;flex-direction:column}
-  header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--panel);border-bottom:1px solid #e2e8f0;z-index:3}
-  .brand{font-weight:900;letter-spacing:.04em;margin-right:auto}
-  .pill{border:1px solid #cbd5e1;border-radius:999px;padding:7px 11px;background:white;font-weight:800;font-size:13px;white-space:nowrap}
-  button{border:1px solid #cbd5e1;background:white;color:#0f172a;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
-  button:hover{background:#f1f5f9}
-  button.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(249,115,22,.15)}
-  #wrap{position:relative;flex:1;min-height:0}
-  canvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
-  #toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);padding:8px 12px;border-radius:999px;color:#fff;background:rgba(15,23,42,.9);opacity:0;transition:opacity .16s;pointer-events:none;font-weight:800;z-index:2}
-  #help{position:absolute;left:14px;bottom:14px;max-width:min(470px,calc(100% - 28px));padding:10px 12px;border:1px solid #dbeafe;border-radius:12px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);color:#475569;font-size:13px;line-height:1.35;pointer-events:none}
-  @media (max-width:800px){.brand{width:100%;margin-right:0}button,.pill{font-size:12px;padding:7px 9px}}
+  html,body{margin:0;width:100%;height:100%}
+  body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:var(--blue);
+    color:var(--ink);
+    overflow:hidden;
+  }
+  #app{height:100vh;position:relative;background:var(--blue);display:grid;grid-template-columns:minmax(0,1fr) 250px}
+  .top-title{
+    position:absolute;left:12px;top:16px;z-index:5;
+    color:#fff;font-size:18px;font-weight:700;letter-spacing:.02em;
+    text-transform:uppercase;user-select:none;pointer-events:none;
+  }
+  #wrap{position:relative;grid-column:1;min-width:0;min-height:0;height:100vh}
+  canvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;background:var(--blue)}
+  #controlPanel{
+    position:relative;grid-column:2;grid-row:1;
+    width:250px;height:100vh;
+    background:var(--panel);border-left:1px solid #4f5c65;
+    box-shadow:-5px 0 12px rgba(0,0,0,.22);
+    padding:18px 16px;z-index:4;
+    overflow:auto;
+  }
+  .panel-title{
+    font-size:13px;letter-spacing:.18em;text-transform:uppercase;
+    color:#343a40;margin:0 0 15px;
+  }
+  .panel-rule{height:2px;background:var(--blue-line);margin-bottom:18px}
+  .stats{display:grid;grid-template-columns:1fr;gap:9px;margin-bottom:16px}
+  .stat{border-bottom:1px solid #d4d8dc;padding:2px 4px 8px}
+  .stat-label{display:block;font-size:12px;color:#5b646d;margin-bottom:3px}
+  .stat-value{font-size:18px;font-weight:700;color:#252a2f}
+  .actions{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:15px}
+  button{
+    border:0;background:var(--blue);color:#fff;border-radius:4px;
+    padding:8px 14px;font-size:14px;cursor:pointer;min-height:34px;
+  }
+  button:hover{background:#3e84b3}
+  button.active{background:#3478a7;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+  .secondary{background:#e9ecef;color:#2d3338;border:1px solid #c7ccd0}
+  .secondary:hover{background:#dde2e6}
+  #help{font-size:13px;line-height:1.45;color:#4f5961;margin-top:2px}
+  #toast{
+    position:absolute;left:50%;top:18px;transform:translateX(-50%);
+    color:#fff;background:rgba(38,73,96,.94);border:1px solid rgba(255,255,255,.35);
+    border-radius:3px;padding:8px 12px;opacity:0;transition:opacity .16s;
+    pointer-events:none;font-size:13px;font-weight:700;z-index:6;
+  }
+  @media (max-width:760px){
+    #app{display:block}
+    .top-title{font-size:16px;top:10px}
+    #wrap{position:absolute;inset:0;height:auto}
+    #controlPanel{position:absolute;right:10px;left:10px;bottom:10px;width:auto;height:auto;max-height:42%;border:1px solid #4f5c65;border-radius:5px;box-shadow:0 6px 14px rgba(0,0,0,.32);padding:12px 14px}
+    .stats{grid-template-columns:repeat(3,1fr);margin-bottom:10px}.actions{grid-template-columns:repeat(3,1fr);margin-bottom:10px}
+  }
 </style>
 </head>
 <body>
 <div id="app">
-  <header>
-    <div class="brand">ORG SLASH</div>
-    <button id="sameBtn" class="active">Same tree</button>
-    <button id="randomBtn">Random tree</button>
-    <button id="resetBtn">Restart</button>
-    <span class="pill">Score: <b id="score">0</b></span>
-    <span class="pill">Combo: <b id="combo">x1</b></span>
-    <span class="pill">Loose: <b id="loose">0</b></span>
-  </header>
+  <div class="top-title">ORG SLASH</div>
   <div id="wrap">
     <canvas id="game"></canvas>
     <div id="toast"></div>
-    <div id="help">Cut any branch or endpoint. Bigger cuts create more future growth elsewhere. Swipe through loose heads to kick them back up.</div>
   </div>
+  <aside id="controlPanel" aria-label="Game controls">
+      <div class="panel-title">CONTROL PANEL</div>
+      <div class="panel-rule"></div>
+      <div class="stats">
+        <div class="stat"><span class="stat-label">Score</span><b class="stat-value" id="score">0</b></div>
+        <div class="stat"><span class="stat-label">Combo</span><b class="stat-value" id="combo">x1</b></div>
+        <div class="stat"><span class="stat-label">Loose</span><b class="stat-value" id="loose">0</b></div>
+      </div>
+      <div class="actions">
+        <button id="sameBtn" class="active">Same tree</button>
+        <button id="randomBtn">Random tree</button>
+        <button id="resetBtn" class="secondary">Restart</button>
+      </div>
+      <div id="help">Slash branches or people to cut them loose. Swipe loose people upward to kick them back into the tree.</div>
+  </aside>
 </div>
 <script>
 (() => {
@@ -142,12 +197,12 @@
     ctx.fillStyle='#111827';ctx.fillRect(-r*.38,-r*.05,2.6,2.6);ctx.fillRect(r*.23,-r*.05,2.6,2.6);ctx.fillStyle='rgba(90,40,30,.75)';ctx.fillRect(-1,r*.18,2.5,1.8);ctx.restore();
   }
 
-  function drawNode(n){if(n.alpha<=0)return;ctx.save();ctx.globalAlpha=n.alpha;drawFace(n);if(n.kind==='ring'){ctx.beginPath();ctx.arc(n.x,n.y,n.radius+2,0,Math.PI*2);ctx.lineWidth=5;ctx.strokeStyle='#f97316';ctx.stroke()}ctx.restore()}
+  function drawNode(n){if(n.alpha<=0)return;ctx.save();ctx.globalAlpha=n.alpha;drawFace(n);ctx.beginPath();ctx.arc(n.x,n.y,n.radius+1,0,Math.PI*2);ctx.lineWidth=1.5;ctx.strokeStyle='rgba(255,255,255,.78)';ctx.stroke();if(n.kind==='ring'){ctx.beginPath();ctx.arc(n.x,n.y,n.radius+3,0,Math.PI*2);ctx.lineWidth=4;ctx.strokeStyle='#f97316';ctx.stroke()}ctx.restore()}
 
   function draw(){
-    ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#4b91bf';ctx.fillRect(0,0,W,H);
     ctx.lineCap='round';
-    for(const e of edges){if(e.cut)continue;const a=node(e.a),b=node(e.b);if(!a||!b||a.detached||b.detached)continue;ctx.strokeStyle='#bfd7f1';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+    for(const e of edges){if(e.cut)continue;const a=node(e.a),b=node(e.b);if(!a||!b||a.detached||b.detached)continue;ctx.strokeStyle='rgba(255,255,255,.46)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
     // Reattachment slots are intentionally invisible.
     for(const n of nodes)drawNode(n);
     for(const p of particles){ctx.save();ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color||'#f97316';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.restore()}
@@ -195,18 +250,49 @@
 
   function growElsewhere(){
     if(growthCredits<=0)return false;
-    const candidates=nodes.filter(n=>!n.detached&&n.alpha>0&&n.level<7&&n.baseY<.82&&liveChildren(n.id).length<4);
+
+    // Prefer a mix of frontier nodes and lightly populated internal nodes.
+    // This makes the tree spread into lopsided clusters instead of repeatedly
+    // producing symmetrical left/right forks.
+    const candidates=nodes.filter(n=>{
+      if(n.detached||n.alpha<=0||n.level>=8||n.baseY>=.88)return false;
+      const c=liveChildren(n.id).length;
+      return c<5;
+    });
     if(!candidates.length)return false;
-    candidates.sort((a,b)=>liveChildren(a.id).length-liveChildren(b.id).length || Math.random()-.5);
-    const pool=candidates.slice(0,Math.max(1,Math.ceil(candidates.length*.55)));
-    const p=pool[Math.floor(Math.random()*pool.length)];
-    const childCount=liveChildren(p.id).length;
-    for(let attempt=0;attempt<14;attempt++){
-      const spread=.04+Math.random()*.055;
-      const dir=((childCount+attempt)%2===0?-1:1);
-      const x=Math.max(.025,Math.min(.975,p.baseX+dir*spread+(Math.random()-.5)*.025));
-      const y=Math.min(.9,p.baseY+.09+Math.random()*.055);
+
+    const weighted=[];
+    for(const n of candidates){
+      const c=liveChildren(n.id).length;
+      let weight = c===0 ? 5 : c===1 ? 4 : c===2 ? 3 : c===3 ? 2 : 1;
+      if(n.baseY>.55) weight+=2; // encourage outward growth at the fringe
+      if(n.level<2) weight=Math.max(1,weight-2); // don't keep fattening the trunk
+      for(let i=0;i<weight;i++) weighted.push(n);
+    }
+    const p=weighted[Math.floor(Math.random()*weighted.length)];
+    const siblings=liveChildren(p.id);
+
+    for(let attempt=0;attempt<24;attempt++){
+      // Mostly downward, but with a wide angle range and occasional shallow
+      // side branches so the silhouette feels organic rather than binary.
+      const shallow=Math.random()<.22;
+      const dy=shallow ? (.035+Math.random()*.045) : (.07+Math.random()*.085);
+      const maxSide=shallow ? .12 : .095;
+      let dx=(Math.random()*2-1)*maxSide;
+
+      // If this parent already has children, bias new growth toward its emptier side.
+      if(siblings.length){
+        const avg=siblings.reduce((s,c)=>s+(c.baseX-p.baseX),0)/siblings.length;
+        dx += avg>0 ? -(0.025+Math.random()*.035) : (0.025+Math.random()*.035);
+      }
+
+      // Rare longer shoots create larger, uneven limbs.
+      if(Math.random()<.12) dx*=1.45;
+
+      const x=Math.max(.025,Math.min(.975,p.baseX+dx));
+      const y=Math.max(.09,Math.min(.92,p.baseY+dy));
       if(!canPlaceGrowth(x,y))continue;
+
       const kind=Math.random()<.14?'ring':'blue';
       const id=addNode(x,y,p.id,p.level+1,kind),n=node(id);
       n.x=p.x;n.y=p.y;n.spawnT=0;

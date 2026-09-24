@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bólya Simulator</title>
+<title>Org Slash</title>
 <style>
   :root{
     --blue:#4b91bf;
@@ -50,6 +50,10 @@
   .stat{border-bottom:1px solid #d4d8dc;padding:2px 4px 8px}
   .stat-label{display:block;font-size:12px;color:#5b646d;margin-bottom:3px}
   .stat-value{font-size:18px;font-weight:700;color:#252a2f}
+  .money-good{color:#1f7a53}
+  .money-warn{color:#b7791f}
+  .money-bad{color:#c94141}
+  .payroll-bad{color:#c94141}
   .actions{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:15px}
   button{
     border:0;background:var(--blue);color:#fff;border-radius:4px;
@@ -66,12 +70,42 @@
     border-radius:3px;padding:8px 12px;opacity:0;transition:opacity .16s;
     pointer-events:none;font-size:13px;font-weight:700;z-index:6;
   }
+
+  #loseOverlay{
+    position:absolute;inset:0;z-index:20;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0);
+    opacity:0;pointer-events:none;
+    transition:background 1.1s ease,opacity 1.1s ease;
+  }
+  #loseOverlay.show{
+    background:rgba(0,0,0,.96);
+    opacity:1;pointer-events:auto;
+  }
+  .lose-box{
+    text-align:center;color:#fff;
+    transform:translateY(10px);opacity:0;
+    transition:opacity .45s ease .55s,transform .45s ease .55s;
+  }
+  #loseOverlay.show .lose-box{opacity:1;transform:translateY(0)}
+  .lose-title{
+    font-size:34px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;margin-bottom:10px;
+  }
+  .lose-sub{font-size:15px;color:#cbd5e1;margin-bottom:20px}
+  #loseRestart{
+    border:1px solid rgba(255,255,255,.75);
+    background:#fff;color:#1f2937;border-radius:4px;
+    padding:10px 18px;font-weight:700;font-size:15px;
+  }
+  #loseRestart:hover{background:#e5e7eb}
+
   @media (max-width:760px){
     #app{display:block}
     .top-title{font-size:16px;top:10px}
     #wrap{position:absolute;inset:0;height:auto}
     #controlPanel{position:absolute;right:10px;left:10px;bottom:10px;width:auto;height:auto;max-height:42%;border:1px solid #4f5c65;border-radius:5px;box-shadow:0 6px 14px rgba(0,0,0,.32);padding:12px 14px}
-    .stats{grid-template-columns:repeat(3,1fr);margin-bottom:10px}.actions{grid-template-columns:repeat(3,1fr);margin-bottom:10px}
+    .stats{grid-template-columns:repeat(2,1fr);margin-bottom:10px}.actions{grid-template-columns:repeat(3,1fr);margin-bottom:10px}
   }
 </style>
 </head>
@@ -86,7 +120,8 @@
       <div class="panel-title">CONTROL PANEL</div>
       <div class="panel-rule"></div>
       <div class="stats">
-        <div class="stat"><span class="stat-label">Monthly total pay</span><b class="stat-value" id="payroll">0 HUF</b></div>
+        <div class="stat"><span class="stat-label">Company money</span><b class="stat-value money-good" id="companyMoney">0 HUF</b></div>
+        <div class="stat"><span class="stat-label">Monthly total pay</span><b class="stat-value payroll-bad" id="payroll">0 HUF</b></div>
         <div class="stat"><span class="stat-label">Employees</span><b class="stat-value" id="employees">0</b></div>
         <div class="stat"><span class="stat-label">Loose</span><b class="stat-value" id="loose">0</b></div>
       </div>
@@ -95,15 +130,23 @@
         <button id="randomBtn">Random tree</button>
         <button id="resetBtn" class="secondary">Restart</button>
       </div>
-      <div id="help">Slash branches or people to cut them loose. Swipe loose people upward to kick them back into the tree.</div>
+      <div id="help">Slash branches or people to fire them. Swipe loose people upward to kick them back into the tree.</div>
   </aside>
+
+  <div id="loseOverlay" aria-hidden="true">
+    <div class="lose-box">
+      <div class="lose-title">Company Bankrupt</div>
+      <div class="lose-sub">The company ran out of money.</div>
+      <button id="loseRestart" type="button">Restart</button>
+    </div>
+  </div>
 </div>
 <script>
 (() => {
   const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
-  const payrollEl=document.getElementById('payroll'),employeesEl=document.getElementById('employees'),looseEl=document.getElementById('loose');
+  const companyMoneyEl=document.getElementById('companyMoney'),payrollEl=document.getElementById('payroll'),employeesEl=document.getElementById('employees'),looseEl=document.getElementById('loose');
   const toast=document.getElementById('toast'),sameBtn=document.getElementById('sameBtn'),randomBtn=document.getElementById('randomBtn');
-  const resetBtn=document.getElementById('resetBtn');
+  const resetBtn=document.getElementById('resetBtn'),loseOverlay=document.getElementById('loseOverlay'),loseRestart=document.getElementById('loseRestart');
 
   const DPR=Math.min(2,window.devicePixelRatio||1);
   let W=1,H=1,nodes=[],edges=[],slots=[],particles=[],floatingTexts=[];
@@ -111,6 +154,8 @@
   let growthCredits=0,growthTimer=0,nextGrowthAt=.45+Math.random()*.35;
   let pointerDown=false,lastPointer=null,slashTrail=[];
   let nextNodeId=1,nextEdgeId=1,nextSlotId=1;
+  const STARTING_CASH=180000000;
+  let companyMoney=STARTING_CASH,lastPayroll=0,bankruptShown=false,gameOver=false;
   const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const facePalettes=[
@@ -139,6 +184,7 @@
 
   function clearAll(){
     nodes=[];edges=[];slots=[];particles=[];floatingTexts=[];lastActionAt=0;growthCredits=0;growthTimer=0;nextGrowthAt=.45+Math.random()*.35;nextNodeId=1;nextEdgeId=1;nextSlotId=1;slashTrail=[];
+    companyMoney=STARTING_CASH;lastPayroll=0;bankruptShown=false;gameOver=false;if(loseOverlay){loseOverlay.classList.remove('show');loseOverlay.setAttribute('aria-hidden','true')}
   }
 
   function buildSame(){
@@ -222,8 +268,12 @@
   }
 
   function money(v){return Math.round(v).toLocaleString('hu-HU')+' HUF'}
+  function currentPayroll(){return nodes.filter(n=>!n.detached&&n.alpha>0).reduce((sum,n)=>sum+n.salary,0)}
   function floatMoney(x,y,amount,color){
     floatingTexts.push({x,y,text:(amount<0?'−':'+')+money(Math.abs(amount)),color,alpha:1,vy:-28});
+  }
+  function floatLabel(x,y,text,color){
+    floatingTexts.push({x,y,text,color,alpha:1,vy:-20});
   }
 
   function createSlotFor(childId){
@@ -235,8 +285,8 @@
     if(edge.cut)return;edge.cut=true;createSlotFor(edge.b);const ids=collectSubtree(edge.b,[]);growthCredits+=Math.max(1,Math.ceil(ids.length/2));
     const firedPay=ids.reduce((sum,id)=>{const n=node(id);return sum+(n&&!n.detached?n.salary:0)},0);
     for(const id of ids){const n=node(id);if(!n||n.detached)continue;n.detached=true;n.wasKicked=false;n.vy=reducedMotion?0:60+Math.random()*50;n.vx=reducedMotion?0:(Math.random()-.5)*70;n.rot=0;n.alpha=1;n.bounces=0}
-    if(firedPay>0)floatMoney(x,y,-firedPay,'#b91c1c');
-    flash(`${ids.length} fired • −${money(firedPay)}`);
+    if(firedPay>0)floatMoney(x,y,-firedPay,'#1f7a53');
+    flash(`${ids.length} fired • payroll −${money(firedPay)}`);
     updateUI();
     burst(x,y,Math.min(20,6+ids.length),'#f97316');
   }
@@ -247,7 +297,7 @@
     if(!n.detached||!n.wasKicked||n.vy>=-25||s.filled||s.age>=s.expiresAt)return false;const p=node(s.parent);if(!p||p.detached)return false;
     const oldEdge=edgeByChild(n.id);if(oldEdge)oldEdge.cut=true;
     n.detached=false;n.wasKicked=false;n.parent=s.parent;n.level=s.level;n.baseX=s.baseX;n.baseY=s.baseY;n.x=s.x;n.y=s.y;n.vx=n.vy=0;n.rot=0;n.alpha=1;
-    edges.push({id:nextEdgeId++,a:s.parent,b:n.id,cut:false});s.filled=true;floatMoney(s.x,s.y,n.salary,'#166534');flash(`Rehired • +${money(n.salary)}`);updateUI();burst(s.x,s.y,8,'#16a34a');return true;
+    edges.push({id:nextEdgeId++,a:s.parent,b:n.id,cut:false});s.filled=true;floatMoney(s.x,s.y,n.salary,'#c94141');flash(`Rehired • payroll +${money(n.salary)}`);updateUI();burst(s.x,s.y,8,'#16a34a');return true;
   }
 
   function liveChildren(id){return edges.filter(e=>!e.cut&&e.a===id).map(e=>node(e.b)).filter(n=>n&&!n.detached&&n.alpha>0)}
@@ -310,7 +360,7 @@
       const kind=Math.random()<.14?'ring':'blue';
       const id=addNode(x,y,p.id,p.level+1,kind),n=node(id);
       n.x=p.x;n.y=p.y;n.spawnT=0;
-      growthCredits--;floatMoney(p.x,p.y,n.salary,'#166534');updateUI();burst(p.x,p.y,5,'#16a34a');
+      growthCredits--;floatMoney(p.x,p.y,n.salary,'#c94141');updateUI();burst(p.x,p.y,5,'#16a34a');
       return true;
     }
     return false;
@@ -327,6 +377,7 @@
   function segIntersectsThickSeg(ax,ay,bx,by,cx,cy,dx,dy,t){if(linesIntersect(ax,ay,bx,by,cx,cy,dx,dy))return true;return Math.min(segmentDistance(ax,ay,cx,cy,dx,dy),segmentDistance(bx,by,cx,cy,dx,dy),segmentDistance(cx,cy,ax,ay,bx,by),segmentDistance(dx,dy,ax,ay,bx,by))<=t}
 
   function slash(a,b){
+    if(gameOver)return;
     const dx=b.x-a.x,dy=b.y-a.y,swipeSpeed=Math.min(700,220+Math.hypot(dx,dy)*7);
 
     // Make endpoints just as easy to cut as big subtrees: swiping through any attached
@@ -375,10 +426,14 @@
   sameBtn.addEventListener('click',()=>{mode='same';sameBtn.classList.add('active');randomBtn.classList.remove('active');buildSame()});
   randomBtn.addEventListener('click',()=>{mode='random';randomBtn.classList.add('active');sameBtn.classList.remove('active');buildRandom()});
   resetBtn.addEventListener('click',()=>mode==='same'?buildSame():buildRandom());
+  loseRestart.addEventListener('click',()=>mode==='same'?buildSame():buildRandom());
 
   function updateUI(){
     const active=nodes.filter(n=>!n.detached&&n.alpha>0);
     const payroll=active.reduce((sum,n)=>sum+n.salary,0);
+    lastPayroll=payroll;
+    companyMoneyEl.textContent=money(companyMoney);
+    companyMoneyEl.className='stat-value ' + (companyMoney<15000000?'money-bad':companyMoney<50000000?'money-warn':'money-good');
     payrollEl.textContent=money(payroll);
     employeesEl.textContent=active.length;
     looseEl.textContent=nodes.filter(n=>n.detached&&n.alpha>0).length;
@@ -388,16 +443,27 @@
   let prev=performance.now();
   function tick(t){
     const dt=Math.min(.033,(t-prev)/1000);prev=t;
+      const payroll=currentPayroll();
+      if(!gameOver){
+        companyMoney=Math.max(0,companyMoney-(payroll*dt/5));
+        if(companyMoney<=0&&!bankruptShown){
+          bankruptShown=true;
+          gameOver=true;
+          companyMoney=0;
+          loseOverlay.classList.add('show');
+          loseOverlay.setAttribute('aria-hidden','false');
+        }
+      }
+
+
+      if(gameOver){updateUI();draw();requestAnimationFrame(tick);return;}
+
       for(const s of slots){if(!s.filled)s.age+=dt}
       growthTimer+=dt;
-      // Aggressive rebuilding: the more of the tree is missing, the faster it throws out
-      // new branches elsewhere. Large cuts also bank plenty of future growth.
       const livingCount=nodes.filter(n=>!n.detached&&n.alpha>0).length;
       const desiredCount=mode==='same'?42:36;
       const deficit=Math.max(0,desiredCount-livingCount);
 
-      // Never let a heavily hacked-down tree sit almost empty waiting for credits.
-      // Missing population continuously turns into growth pressure.
       if(deficit>0){
         const minCredits = deficit>24 ? 10 : deficit>14 ? 7 : deficit>7 ? 4 : 2;
         if(growthCredits<minCredits) growthCredits=minCredits;
@@ -405,12 +471,8 @@
 
       if(growthCredits>0&&growthTimer>=nextGrowthAt){
         growthTimer=0;
-
-        // When most of the tree is gone, several branches can burst out in one beat.
         const burstCount = deficit>24 ? 4 : deficit>14 ? 3 : deficit>7 ? 2 : 1;
         for(let i=0;i<burstCount&&growthCredits>0;i++) growElsewhere();
-
-        // Very sparse trees regrow extremely quickly; near-full trees calm down.
         nextGrowthAt = deficit>24 ? .22+Math.random()*.16
                      : deficit>14 ? .3+Math.random()*.2
                      : deficit>7  ? .42+Math.random()*.24
